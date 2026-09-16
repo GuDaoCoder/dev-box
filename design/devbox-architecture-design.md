@@ -1321,6 +1321,10 @@ HTTP Client 是权限模型的第二个试金石；若时间有限，可把真�
 - [JBang：Script Directives](https://www.jbang.dev/documentation/jbang/latest/script-directives.html)
 - [JBang：Installation](https://www.jbang.dev/documentation/jbang/latest/installation.html)
 
+## 23. 开发任务拆解
+
+MVP 的里程碑、Epic、任务依赖、规模、验收结果、首个纵向切片和发布检查表见 [DevBox MVP 开发任务拆解](./devbox-development-task-breakdown.md)。任务顺序以先完成 App Shell/平台骨架，再完成 Java Runner 纵向切片，随后推进三个纯 UI 插件、HTTP Client 和三平台发布为原则。
+
 ---
 
 本设计的核心不是“允许插件做任何事”，而是让插件通过少量、稳定、可审计的领域能力完成有价值的工作。先用 Java Runner、HTTP Client 和三个纯 UI 插件验证边界，再逐步开放生态，是 DevBox 在开发效率、安全性和长期兼容性之间最稳妥的路线。

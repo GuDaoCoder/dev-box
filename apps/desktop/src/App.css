@@ -1,0 +1,150 @@
+:root {
+  color: #e6edf3;
+  background: #0b0f14;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-rows: 56px 1fr 28px;
+  background: radial-gradient(circle at 72% 35%, rgb(67 198 232 / 8%), transparent 34%), #0b0f14;
+}
+
+.titlebar,
+.statusbar {
+  display: flex;
+  align-items: center;
+  border-color: #263241;
+  background: #111821;
+}
+
+.titlebar {
+  gap: 12px;
+  padding: 0 20px;
+  border-bottom: 1px solid #263241;
+}
+
+.brand-mark {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  color: #0b0f14;
+  background: #43c6e8;
+  font-weight: 800;
+}
+
+.milestone {
+  margin-left: auto;
+  color: #8b98a7;
+  font-size: 13px;
+}
+
+.workspace {
+  width: min(680px, calc(100% - 48px));
+  margin: auto;
+  padding: 32px;
+  border: 1px solid #263241;
+  border-radius: 8px;
+  background: #111821;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #43c6e8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.1;
+}
+
+.summary {
+  max-width: 58ch;
+  margin: 18px 0 28px;
+  color: #8b98a7;
+  line-height: 1.6;
+}
+
+.foundation-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.foundation-list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #263241;
+  border-radius: 8px;
+  background: #17212c;
+}
+
+.foundation-list span {
+  color: #55d6a7;
+  font-weight: 800;
+}
+
+.statusbar {
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid #263241;
+  color: #8b98a7;
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #55d6a7;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .milestone {
+    display: none;
+  }
+
+  .workspace {
+    padding: 24px;
+  }
+}

@@ -1,0 +1,23 @@
+[package]
+name = "devbox-desktop"
+version = "0.1.0"
+description = "DevBox desktop host"
+authors = ["DevBox contributors"]
+edition = "2021"
+license = "MIT"
+
+# Cargo 清单字段说明：https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# 独立的库名称用于避免与二进制目标重名。
+# 该限制主要影响 Windows，详见：https://github.com/rust-lang/cargo/issues/8519
+name = "devbox_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

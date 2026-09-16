@@ -1,0 +1,5 @@
+# Cargo 生成的编译文件和可执行文件
+/target/
+
+# Tauri 生成的 capability 自动补全 schema
+/gen/schemas
