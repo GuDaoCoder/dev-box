@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import process from "node:process";
 const host = process.env.TAURI_DEV_HOST;
 
 // Vite 配置文档：https://vite.dev/config/
 export default defineConfig(() => ({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
 
   // 以下选项用于 Tauri 开发和构建流程。
   //

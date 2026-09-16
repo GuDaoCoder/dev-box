@@ -1,0 +1,8 @@
+{
+  "INVALID_ARGUMENT": "The supplied value is invalid.",
+  "PERMISSION_DENIED": "This plugin is not allowed to use that capability.",
+  "NOT_FOUND": "The requested item was not found.",
+  "CONFLICT": "This setting changed elsewhere. Reload and try again.",
+  "STORAGE_ERROR": "DevBox could not save the setting.",
+  "INTERNAL": "An unexpected error occurred."
+}

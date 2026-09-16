@@ -11,4 +11,4 @@ pnpm tauri dev
 pnpm check
 ```
 
-The initial screen is intentionally a small engineering-baseline view. Product UI begins in milestone M1.
+The M1 shell includes the built-in Foundation plugin, command palette, light/dark themes and Chinese/English language switching. Use the Foundation page to validate the controlled Host command and SQLite-backed settings flow.

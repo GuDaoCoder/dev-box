@@ -1,0 +1,28 @@
+{
+  "navigation": {
+    "title": "Foundation"
+  },
+  "commands": {
+    "ping": "Foundation: Check host status"
+  },
+  "page": {
+    "eyebrow": "PLATFORM BASELINE",
+    "title": "The foundation is connected.",
+    "description": "This built-in plugin verifies activation, controlled IPC and SQLite-backed settings.",
+    "hostTitle": "Rust Host",
+    "hostDescription": "Call the versioned command gateway and inspect the structured response.",
+    "hostAction": "Check host",
+    "settingTitle": "Plugin setting",
+    "settingDescription": "Save a display name through the plugin-scoped Settings API.",
+    "settingLabel": "Display name",
+    "settingPlaceholder": "Developer",
+    "save": "Save setting",
+    "saved": "Saved at revision {{revision}}",
+    "notSaved": "Not saved yet",
+    "notChecked": "Not checked",
+    "failed": "The request failed. Please try again.",
+    "ready": "Host ready",
+    "unavailable": "Host unavailable",
+    "version": "Version {{version}}"
+  }
+}

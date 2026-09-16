@@ -1,0 +1,19 @@
+{
+  "name": "@devbox/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --pretty false"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  }
+}

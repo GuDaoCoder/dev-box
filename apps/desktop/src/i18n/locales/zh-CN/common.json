@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "DevBox",
+    "tagline": "本地开发者工具箱"
+  },
+  "navigation": {
+    "tools": "工具",
+    "settings": "设置"
+  },
+  "actions": {
+    "search": "搜索工具与命令",
+    "openPalette": "打开命令面板",
+    "close": "关闭"
+  },
+  "status": {
+    "ready": "就绪",
+    "plugins": "{{count}} 个插件已激活",
+    "milestone": "M1 · 平台骨架"
+  },
+  "errors": {
+    "pluginRender": "当前插件无法显示，请重新启动 DevBox 后再试。"
+  },
+  "palette": {
+    "title": "命令面板",
+    "placeholder": "输入命令或页面名称…",
+    "empty": "没有匹配的命令"
+  }
+}

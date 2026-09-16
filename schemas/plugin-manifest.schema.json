@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devbox.local/schemas/plugin-manifest.schema.json",
+  "title": "DevBox Plugin Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "version", "type", "activationEvents", "contributes"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^devbox\\.[a-z0-9.-]+$", "maxLength": 100 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "type": { "enum": ["ui", "native"] },
+    "activationEvents": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "contributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["views"],
+      "properties": {
+        "views": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "titleKey", "icon", "order"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+              "titleKey": { "type": "string", "minLength": 3 },
+              "icon": { "enum": ["box", "braces", "clock", "coffee", "database", "globe"] },
+              "order": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "titleKey"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9.-]+$" },
+              "titleKey": { "type": "string", "minLength": 3 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

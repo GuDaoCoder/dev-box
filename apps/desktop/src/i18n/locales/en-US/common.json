@@ -1,0 +1,28 @@
+{
+  "app": {
+    "name": "DevBox",
+    "tagline": "Local developer toolbox"
+  },
+  "navigation": {
+    "tools": "Tools",
+    "settings": "Settings"
+  },
+  "actions": {
+    "search": "Search tools and commands",
+    "openPalette": "Open command palette",
+    "close": "Close"
+  },
+  "status": {
+    "ready": "Ready",
+    "plugins": "{{count}} plugin active",
+    "milestone": "M1 · Platform foundation"
+  },
+  "errors": {
+    "pluginRender": "This plugin cannot be displayed. Restart DevBox and try again."
+  },
+  "palette": {
+    "title": "Command palette",
+    "placeholder": "Type a command or page name…",
+    "empty": "No matching command"
+  }
+}

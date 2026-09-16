@@ -18,8 +18,11 @@
     "test:unit": "pnpm -r --if-present test:unit",
     "test:e2e": "playwright test",
     "tauri": "pnpm --filter @devbox/desktop tauri",
+    "plugins:generate": "node scripts/generate-plugin-registry.mjs",
+    "plugins:check": "node scripts/generate-plugin-registry.mjs --check",
+    "locales:check": "node scripts/check-locales.mjs",
     "version:check": "node scripts/check-version.mjs",
-    "check": "pnpm version:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit"
+    "check": "pnpm version:check && pnpm plugins:check && pnpm locales:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

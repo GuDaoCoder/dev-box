@@ -1,0 +1,28 @@
+{
+  "navigation": {
+    "title": "平台基线"
+  },
+  "commands": {
+    "ping": "平台基线：检查 Host 状态"
+  },
+  "page": {
+    "eyebrow": "平台基线",
+    "title": "平台基础能力已连接",
+    "description": "该内置插件用于验证插件激活、受控 IPC 与 SQLite 设置持久化。",
+    "hostTitle": "Rust Host",
+    "hostDescription": "通过版本化 Command Gateway 调用 Host，并查看结构化响应。",
+    "hostAction": "检查 Host",
+    "settingTitle": "插件设置",
+    "settingDescription": "通过插件隔离的 Settings API 保存显示名称。",
+    "settingLabel": "显示名称",
+    "settingPlaceholder": "开发者",
+    "save": "保存设置",
+    "saved": "已保存，修订版本 {{revision}}",
+    "notSaved": "尚未保存",
+    "notChecked": "尚未检查",
+    "failed": "请求失败，请重试。",
+    "ready": "Host 已就绪",
+    "unavailable": "Host 不可用",
+    "version": "版本 {{version}}"
+  }
+}

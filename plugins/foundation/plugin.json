@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "devbox.builtin.foundation",
+  "name": "Foundation",
+  "version": "0.1.0",
+  "type": "native",
+  "activationEvents": ["onStartupFinished", "onView:foundation"],
+  "contributes": {
+    "views": [
+      {
+        "id": "foundation",
+        "titleKey": "plugin-foundation:navigation.title",
+        "icon": "box",
+        "order": 10
+      }
+    ],
+    "commands": [
+      {
+        "id": "foundation.ping",
+        "titleKey": "plugin-foundation:commands.ping"
+      }
+    ]
+  }
+}

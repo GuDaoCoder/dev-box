@@ -1,0 +1,13 @@
+{
+  "title": "Settings",
+  "description": "Personalize how DevBox looks and behaves.",
+  "language": "Language",
+  "languageDescription": "Changes apply immediately and are kept on this device.",
+  "system": "Follow system",
+  "chinese": "简体中文",
+  "english": "English",
+  "appearance": "Appearance",
+  "theme": "Color theme",
+  "dark": "Dark",
+  "light": "Light"
+}

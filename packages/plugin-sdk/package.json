@@ -1,0 +1,23 @@
+{
+  "name": "@devbox/plugin-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --pretty false",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@devbox/ipc-contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  }
+}

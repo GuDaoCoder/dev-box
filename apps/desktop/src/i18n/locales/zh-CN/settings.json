@@ -1,0 +1,13 @@
+{
+  "title": "设置",
+  "description": "调整 DevBox 的外观和使用方式。",
+  "language": "语言",
+  "languageDescription": "修改后立即生效，并保存在当前设备。",
+  "system": "跟随系统",
+  "chinese": "简体中文",
+  "english": "English",
+  "appearance": "外观",
+  "theme": "颜色主题",
+  "dark": "深色",
+  "light": "浅色"
+}
