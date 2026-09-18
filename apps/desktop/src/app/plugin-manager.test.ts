@@ -10,8 +10,13 @@ const testPlugin: DevBoxPlugin = {
     id: "devbox.test",
     name: "Test",
     version: "0.1.0",
+    publisher: { id: "devbox", name: "DevBox", keyId: "0000000000000000" },
+    engines: { devbox: ">=0.1.0", pluginApi: "^1.0.0" },
     type: "ui",
+    entry: { main: "dist/index.html" },
     activationEvents: ["onStartupFinished"],
+    permissions: [],
+    locales: {},
     contributes: {
       views: [{ id: "test", titleKey: "test:title", icon: "box", order: 1 }],
       commands: [{ id: "test.run", titleKey: "test:run" }],

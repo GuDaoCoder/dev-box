@@ -5,6 +5,7 @@
   },
   "navigation": {
     "tools": "Tools",
+    "pluginCenter": "Plugin Center",
     "settings": "Settings"
   },
   "actions": {
@@ -15,7 +16,7 @@
   "status": {
     "ready": "Ready",
     "plugins": "{{count}} plugin active",
-    "milestone": "M1 · Platform foundation"
+    "milestone": "M2 · Plugin distribution"
   },
   "errors": {
     "pluginRender": "This plugin cannot be displayed. Restart DevBox and try again."
@@ -24,5 +25,75 @@
     "title": "Command palette",
     "placeholder": "Type a command or page name…",
     "empty": "No matching command"
+  },
+  "pluginCenter": {
+    "eyebrow": "PLUGIN DISTRIBUTION",
+    "title": "Plugin Center",
+    "description": "Manage online and offline plugins through one signed installation pipeline.",
+    "sidebar": "Install, enable, roll back, and remove plugins. Every source uses the same security checks.",
+    "tabs": {
+      "installed": "Installed",
+      "online": "Online",
+      "offline": "Offline Install"
+    },
+    "actions": {
+      "installFromFile": "Install from file",
+      "choosePackage": "Choose .devbox-plugin",
+      "refresh": "Refresh catalog",
+      "install": "Install",
+      "update": "Update",
+      "cancel": "Cancel",
+      "open": "Open",
+      "enable": "Enable",
+      "disable": "Disable",
+      "rollback": "Roll back",
+      "uninstall": "Uninstall"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "installed": "Installed"
+    },
+    "sources": {
+      "online": "Official online catalog",
+      "offline": "Local file",
+      "development": "Developer mode"
+    },
+    "signature": {
+      "verified": "Signature verified",
+      "unsigned-development": "Unverified (developer mode)"
+    },
+    "catalog": {
+      "url": "Official catalog URL",
+      "officialOnly": "This release only accepts online plugins signed by a trusted publisher configured in DevBox."
+    },
+    "offline": {
+      "title": "Install from a local file",
+      "description": "DevBox copies the package into isolated staging before checking integrity, signature, and compatibility.",
+      "developerMode": "Allow untrusted development packages",
+      "developerWarning": "For local development only. This mode grants no additional file, network, or process access."
+    },
+    "confirm": {
+      "title": "Confirm plugin installation",
+      "source": "Source",
+      "publisher": "Publisher",
+      "signature": "Signature",
+      "permissions": "Requested permissions",
+      "noPermissions": "This plugin requests no Host permissions."
+    },
+    "confirmUninstall": {
+      "plugin": "Uninstall {{name}}?",
+      "data": "Delete the plugin's saved local data too? Choose Cancel to keep it."
+    },
+    "empty": {
+      "installedTitle": "No plugins installed",
+      "installedDescription": "Install from the official online catalog or a local .devbox-plugin file."
+    },
+    "messages": {
+      "desktopOnly": "Offline file selection is available in the DevBox desktop app.",
+      "catalogRequired": "Enter a plugin catalog URL first.",
+      "catalogUpdated": "Plugin catalog updated.",
+      "operationComplete": "Plugin state updated."
+    }
   }
 }

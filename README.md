@@ -29,4 +29,20 @@ pnpm test:e2e
 pnpm tauri build --no-bundle
 ```
 
+## M2 plugin distribution fixture
+
+Generate deterministic signed packages and the local test catalog:
+
+```sh
+pnpm fixtures:m2
+```
+
+The generated files are written to `fixtures/m2/generated/`. The committed private key is for local M2 testing only and must never be used for production releases.
+
+The public SDK and packaging packages can be packed independently for integration with the separate `devbox-tools` repository:
+
+```sh
+pnpm sdk:pack
+```
+
 Architecture, UI design and the MVP backlog are available in [`design/`](./design/).

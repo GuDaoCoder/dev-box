@@ -1,0 +1,30 @@
+:root {
+  color: #e8edf2;
+  background: #0b0f14;
+  font-family: Inter, system-ui, sans-serif;
+}
+body {
+  display: grid;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+}
+main {
+  width: min(620px, calc(100% - 48px));
+  padding: 36px;
+  border: 1px solid #3e3566;
+  border-radius: 12px;
+  background: #151528;
+}
+span {
+  color: #8b7cf6;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+h1 {
+  margin: 12px 0;
+}
+p {
+  color: #9b98b2;
+}

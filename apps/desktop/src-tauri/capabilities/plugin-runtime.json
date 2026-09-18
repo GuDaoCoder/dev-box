@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "plugin-runtime",
+  "description": "安装插件的最小 IPC 能力，具体授权仍由 Host 按窗口身份和用户授权校验",
+  "windows": ["plugin-*"],
+  "permissions": ["core:default"]
+}

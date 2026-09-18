@@ -5,6 +5,7 @@
   },
   "navigation": {
     "tools": "工具",
+    "pluginCenter": "插件中心",
     "settings": "设置"
   },
   "actions": {
@@ -15,7 +16,7 @@
   "status": {
     "ready": "就绪",
     "plugins": "{{count}} 个插件已激活",
-    "milestone": "M1 · 平台骨架"
+    "milestone": "M2 · 插件分发基础"
   },
   "errors": {
     "pluginRender": "当前插件无法显示，请重新启动 DevBox 后再试。"
@@ -24,5 +25,75 @@
     "title": "命令面板",
     "placeholder": "输入命令或页面名称…",
     "empty": "没有匹配的命令"
+  },
+  "pluginCenter": {
+    "eyebrow": "PLUGIN DISTRIBUTION",
+    "title": "插件中心",
+    "description": "通过统一的签名校验和安装流程管理在线与离线插件。",
+    "sidebar": "安装、启停、回退和卸载插件。所有来源都会经过同一套安全检查。",
+    "tabs": {
+      "installed": "已安装",
+      "online": "在线",
+      "offline": "离线安装"
+    },
+    "actions": {
+      "installFromFile": "从文件安装",
+      "choosePackage": "选择 .devbox-plugin",
+      "refresh": "刷新目录",
+      "install": "安装",
+      "update": "更新",
+      "cancel": "取消",
+      "open": "打开",
+      "enable": "启用",
+      "disable": "停用",
+      "rollback": "回退",
+      "uninstall": "卸载"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已停用",
+      "installed": "已安装"
+    },
+    "sources": {
+      "online": "官方在线目录",
+      "offline": "本地文件",
+      "development": "开发者模式"
+    },
+    "signature": {
+      "verified": "签名已验证",
+      "unsigned-development": "未验证（开发者模式）"
+    },
+    "catalog": {
+      "url": "官方目录地址",
+      "officialOnly": "当前阶段只接受由 DevBox 配置的可信发布者签名的在线插件。"
+    },
+    "offline": {
+      "title": "从本地文件安装",
+      "description": "选择插件包后，DevBox 会先复制到隔离暂存区，再进行完整性、签名和兼容性检查。",
+      "developerMode": "允许未受信任的开发包",
+      "developerWarning": "仅用于本地开发；此模式不会授予额外的文件、网络或进程权限。"
+    },
+    "confirm": {
+      "title": "确认安装插件",
+      "source": "来源",
+      "publisher": "发布者",
+      "signature": "签名",
+      "permissions": "申请的权限",
+      "noPermissions": "此插件不申请 Host 权限。"
+    },
+    "confirmUninstall": {
+      "plugin": "确定卸载 {{name}} 吗？",
+      "data": "是否同时删除该插件保存的本地数据？选择“取消”将保留数据。"
+    },
+    "empty": {
+      "installedTitle": "还没有安装插件",
+      "installedDescription": "可以从官方在线目录或本地 .devbox-plugin 文件安装。"
+    },
+    "messages": {
+      "desktopOnly": "离线文件选择只能在 DevBox 桌面应用中使用。",
+      "catalogRequired": "请先填写插件目录地址。",
+      "catalogUpdated": "插件目录已更新。",
+      "operationComplete": "插件状态已更新。"
+    }
   }
 }

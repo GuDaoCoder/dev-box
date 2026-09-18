@@ -1,7 +1,7 @@
 # DevBox MVP 开发任务拆解
 
 > 输入文档：`devbox-architecture-design.md`、`devbox-ui-design-spec.md`
-> 更新日期：2026-09-17
+> 更新日期：2026-09-18
 > 仓库：`dev-box` 平台、`devbox-tools` 官方工具
 > 产品范围：插件平台、在线/离线安装、JSON、Timestamp、Encoding、UUID/Hash
 > 明确排除：SQL Formatter、JWT、正则测试、HTTP Client、Java 编辑器/Runner
@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | M0 工程基线 | 已完成 | 建立可持续开发工程 | workspace、Tauri、CI、测试 | 工程可检查和构建 |
 | M1 Shell 与平台骨架 | 已完成 | 打通平台最小闭环 | App Shell、i18n、Plugin SDK、IPC、SQLite | Foundation 插件可激活、调用 Host、保存设置 |
-| M2 插件分发基础 | 待开发 | 建立安全、可恢复的运行时安装能力 | 包格式、签名、Installer、隔离 WebView、在线/离线安装 | 同一签名示例包可在线与离线安装、启停、更新、回退、卸载 |
+| M2 插件分发基础 | 已完成，待验收 | 建立安全、可恢复的运行时安装能力 | 包格式、签名、Installer、隔离 WebView、在线/离线安装 | 同一签名示例包可在线与离线安装、启停、更新、回退、卸载 |
 | M3 官方通用工具 | 待开发 | 用独立仓库验证真实插件交付 | `devbox-tools`、JSON、Timestamp、Encoding、UUID/Hash | 四个工具均以签名包安装并双语可用 |
 | M4 Plugin Center 体验 | 待开发 | 完善用户可见的插件管理 | 在线目录、更新、来源/权限、恢复、开发者模式 | 插件管理关键流程中英文 E2E 通过 |
 | M5 稳定性与发布 | 待开发 | 达到三平台可分发标准 | 安全加固、性能、文档、安装包 | 发布检查表全部通过 |
@@ -89,9 +89,11 @@ M0/M1 已完成
 
 **所属里程碑：M2；主要仓库：`dev-box`**
 
+**状态：已完成，待验收**
+
 | ID | 优先级 | 规模 | 任务 | 依赖 | 验收结果 |
 |---|---|---:|---|---|---|
-| E2-01 | P0 | M | 冻结 Plugin API `0.x` 最小面：context、settings、clipboard、host | E1 | 工具仓库无需引用平台内部源码 |
+| E2-01 | P0 | M | 冻结 Plugin API `1.x` 最小面：context、settings、clipboard、host | E1 | 工具仓库无需引用平台内部源码 |
 | E2-02 | P0 | M | 扩展 manifest schema：publisher、engines、entry、permissions、locales | E1 | 未知字段、非法路径和不兼容版本在安装前失败 |
 | E2-03 | P0 | M | 定义 `.devbox-plugin` 文件结构和规范化规则 | E2-02 | 同一输入在三平台生成一致 checksum 清单 |
 | E2-04 | P0 | M | 定义 `checksums.json`、Ed25519 签名载荷和密钥指纹 | E2-03 | 任一内容字节变化均导致验签失败 |
@@ -103,6 +105,8 @@ M0/M1 已完成
 ## 6. E3：Rust Installer、存储与恢复
 
 **所属里程碑：M2；仓库：`dev-box`**
+
+**状态：已完成，待验收**
 
 | ID | 优先级 | 规模 | 任务 | 依赖 | 验收结果 |
 |---|---|---:|---|---|---|
@@ -121,6 +125,8 @@ M0/M1 已完成
 
 **所属里程碑：M2；仓库：`dev-box`**
 
+**状态：已完成，待验收**
+
 | ID | 优先级 | 规模 | 任务 | 依赖 | 验收结果 |
 |---|---|---:|---|---|---|
 | E4-01 | P0 | L | 实现安装插件的独立 WebView 创建、销毁和 label 规范 | E3-05 | 插件代码不进入主 WebView |
@@ -135,6 +141,8 @@ M0/M1 已完成
 ## 8. E5：在线与离线安装闭环
 
 **所属里程碑：M2；仓库：`dev-box`**
+
+**状态：已完成，待验收**
 
 | ID | 优先级 | 规模 | 任务 | 依赖 | 验收结果 |
 |---|---|---:|---|---|---|

@@ -31,6 +31,7 @@ impl SettingsRepository {
 
     fn initialize(connection: Connection) -> rusqlite::Result<Self> {
         connection.execute_batch(include_str!("../../migrations/0001_initial.sql"))?;
+        connection.execute_batch(include_str!("../../migrations/0002_plugins.sql"))?;
         Ok(Self {
             connection: Mutex::new(connection),
         })

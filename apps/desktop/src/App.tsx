@@ -1,5 +1,16 @@
 import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useState } from "react";
-import { Box, Command, Languages, Moon, Search, Settings, Sun, Wrench, X } from "lucide-react";
+import {
+  Blocks,
+  Box,
+  Command,
+  Languages,
+  Moon,
+  Search,
+  Settings,
+  Sun,
+  Wrench,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Kbd, StatusDot } from "@devbox/ui";
@@ -7,6 +18,7 @@ import { Kbd, StatusDot } from "@devbox/ui";
 import "./App.css";
 import { PluginManager, type PluginManagerSnapshot } from "./app/plugin-manager";
 import { SettingsView } from "./features/settings/SettingsView";
+import { PluginCenterView } from "./features/plugins/PluginCenterView";
 import { applyLocale } from "./i18n";
 import { coreAPI } from "./ipc/client";
 import { builtInPlugins } from "./plugins.generated";
@@ -119,6 +131,7 @@ function App() {
   const setTheme = useAppStore((state) => state.setTheme);
   const setLocale = useAppStore((state) => state.setLocale);
   const activeView = snapshot.views.find((view) => view.id === activeViewId);
+  const toolsActive = activeViewId !== "settings" && activeViewId !== "plugin-center";
   const activeCount = snapshot.states.filter((state) => state.status === "active").length;
 
   useEffect(() => {
@@ -183,11 +196,19 @@ function App() {
         <aside className="activity-rail" aria-label={t("navigation.tools")}>
           <button
             aria-label={t("navigation.tools")}
-            className={activeViewId !== "settings" ? "active" : ""}
+            className={toolsActive ? "active" : ""}
             onClick={() => setActiveViewId(snapshot.views[0]?.id ?? "foundation")}
             type="button"
           >
             <Wrench aria-hidden="true" />
+          </button>
+          <button
+            aria-label={t("navigation.pluginCenter")}
+            className={activeViewId === "plugin-center" ? "active" : ""}
+            onClick={() => setActiveViewId("plugin-center")}
+            type="button"
+          >
+            <Blocks aria-hidden="true" />
           </button>
           <span className="rail-spacer" />
           <button
@@ -201,26 +222,34 @@ function App() {
         </aside>
 
         <aside className="navigation-sidebar">
-          <p className="nav-section-title">{t("navigation.tools")}</p>
-          <nav>
-            {snapshot.views.map((view) => (
-              <button
-                className={activeViewId === view.id ? "active" : ""}
-                key={`${view.pluginId}:${view.id}`}
-                onClick={() => setActiveViewId(view.id)}
-                type="button"
-              >
-                <Box aria-hidden="true" size={17} />
-                {t(view.titleKey)}
-              </button>
-            ))}
-          </nav>
+          <p className="nav-section-title">
+            {t(activeViewId === "plugin-center" ? "navigation.pluginCenter" : "navigation.tools")}
+          </p>
+          {activeViewId === "plugin-center" ? (
+            <div className="sidebar-context-copy">{t("pluginCenter.sidebar")}</div>
+          ) : (
+            <nav>
+              {snapshot.views.map((view) => (
+                <button
+                  className={activeViewId === view.id ? "active" : ""}
+                  key={`${view.pluginId}:${view.id}`}
+                  onClick={() => setActiveViewId(view.id)}
+                  type="button"
+                >
+                  <Box aria-hidden="true" size={17} />
+                  {t(view.titleKey)}
+                </button>
+              ))}
+            </nav>
+          )}
           <div className="sidebar-note">{t("status.milestone")}</div>
         </aside>
 
         <section className="main-workspace">
           {activeViewId === "settings" ? (
             <SettingsView />
+          ) : activeViewId === "plugin-center" ? (
+            <PluginCenterView />
           ) : activeView ? (
             <PluginErrorBoundary fallback={t("errors.pluginRender")} key={activeView.id}>
               <activeView.component />

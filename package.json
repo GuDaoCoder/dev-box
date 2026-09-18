@@ -20,6 +20,8 @@
     "tauri": "pnpm --filter @devbox/desktop tauri",
     "plugins:generate": "node scripts/generate-plugin-registry.mjs",
     "plugins:check": "node scripts/generate-plugin-registry.mjs --check",
+    "fixtures:m2": "node scripts/build-m2-fixtures.mjs",
+    "sdk:pack": "pnpm --filter @devbox/ipc-contracts --filter @devbox/plugin-sdk --filter @devbox/ui --filter @devbox/plugin-pack pack",
     "locales:check": "node scripts/check-locales.mjs",
     "version:check": "node scripts/check-version.mjs",
     "check": "pnpm version:check && pnpm plugins:check && pnpm locales:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit"

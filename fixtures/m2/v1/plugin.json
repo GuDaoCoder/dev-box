@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "devbox.fixture",
+  "name": "M2 Fixture",
+  "description": "用于验证插件安装与隔离运行的测试插件。",
+  "version": "1.0.0",
+  "publisher": {
+    "id": "devbox-test",
+    "name": "DevBox M2 Test Publisher",
+    "keyId": "625017f6bad8108a6db9de12eaec4cbff228d63fa6fb478316d479bd0639f7e4"
+  },
+  "engines": {
+    "devbox": ">=0.1.0, <0.2.0",
+    "pluginApi": "^1.0.0"
+  },
+  "type": "ui",
+  "entry": {
+    "main": "dist/index.html"
+  },
+  "activationEvents": ["onView:fixture"],
+  "permissions": ["storage:read"],
+  "locales": {
+    "zh-CN": "locales/zh-CN.json",
+    "en-US": "locales/en-US.json"
+  },
+  "contributes": {
+    "views": [
+      {
+        "id": "fixture",
+        "titleKey": "fixture.title",
+        "icon": "plug",
+        "order": 10
+      }
+    ]
+  }
+}

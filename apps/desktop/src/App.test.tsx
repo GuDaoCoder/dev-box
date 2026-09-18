@@ -21,4 +21,14 @@ describe("App", () => {
 
     expect(await screen.findByRole("dialog", { name: "Command palette" })).toBeVisible();
   });
+
+  it("打开插件中心并显示在线与离线入口", async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Plugin Center" }));
+
+    expect(await screen.findByRole("heading", { name: "Plugin Center" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: /Online/ })).toBeVisible();
+    expect(screen.getByRole("tab", { name: /Offline Install/ })).toBeVisible();
+  });
 });

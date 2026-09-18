@@ -18,6 +18,9 @@ export type DevBoxErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "STORAGE_ERROR"
+  | "PLUGIN_PACKAGE_INVALID"
+  | "PLUGIN_INCOMPATIBLE"
+  | "NETWORK_ERROR"
   | "INTERNAL";
 
 export interface DevBoxError {
@@ -61,6 +64,120 @@ export interface SettingsUpdateRequest {
 
 export interface SettingsUpdateResponse {
   record: SettingRecord;
+}
+
+export type PluginPermission =
+  "clipboard:read" | "clipboard:write" | "storage:read" | "storage:write";
+
+export interface RuntimePluginManifest {
+  schemaVersion: 1;
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  publisher: {
+    id: string;
+    name: string;
+    keyId: string;
+  };
+  engines: {
+    devbox: string;
+    pluginApi: string;
+  };
+  type: "ui";
+  entry: {
+    main: string;
+  };
+  activationEvents: string[];
+  permissions: PluginPermission[];
+  locales: Partial<Record<"zh-CN" | "en-US", string>>;
+  contributes: {
+    views: Array<{
+      id: string;
+      titleKey: string;
+      icon: string;
+      order: number;
+    }>;
+    commands?: Array<{
+      id: string;
+      titleKey: string;
+    }>;
+  };
+}
+
+export interface InstalledPlugin {
+  id: string;
+  name: string;
+  publisherId: string;
+  currentVersion: string;
+  previousVersion?: string;
+  enabled: boolean;
+  status: "installed" | "disabled" | "failed";
+  source: "online" | "offline" | "development";
+  manifest: RuntimePluginManifest;
+  grantedPermissions: PluginPermission[];
+}
+
+export interface PackageSummary {
+  manifest: RuntimePluginManifest;
+  archiveSha256: string;
+  signatureStatus: "verified" | "unsigned-development";
+  expandedSize: number;
+}
+
+export interface InstallPreflight {
+  token: string;
+  summary: PackageSummary;
+  source: "online" | "offline" | "development";
+  sourceReference?: string;
+  change: "install" | "update" | "reinstall";
+}
+
+export interface CatalogVersion {
+  version: string;
+  packageUrl: string;
+  packageSha256: string;
+  devbox: string;
+  pluginApi: string;
+  releasedAt: string;
+  releaseNotes: string;
+  revoked: boolean;
+}
+
+export interface CatalogPlugin {
+  id: string;
+  name: string;
+  description: string;
+  publisher: string;
+  versions: CatalogVersion[];
+}
+
+export interface PluginCatalog {
+  schemaVersion: 1;
+  generatedAt: string;
+  plugins: CatalogPlugin[];
+}
+
+export interface InstalledPluginsResponse {
+  plugins: InstalledPlugin[];
+}
+
+export interface PluginGrant {
+  permission: PluginPermission;
+  granted: boolean;
+  revision: number;
+}
+
+export interface PluginGrantsResponse {
+  grants: PluginGrant[];
+}
+
+export interface PreflightResponse {
+  preflight: InstallPreflight;
+}
+
+export interface CatalogResponse {
+  catalog: PluginCatalog;
 }
 
 export function createEnvelope<T>(pluginId: string, payload: T): CommandEnvelope<T> {

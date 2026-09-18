@@ -37,7 +37,7 @@ export class DisposableStore implements Disposable {
 export interface ViewContribution {
   id: string;
   titleKey: string;
-  icon: "box" | "braces" | "clock" | "coffee" | "database" | "globe";
+  icon: "box" | "braces" | "clock" | "code" | "fingerprint" | "plug";
   order: number;
 }
 
@@ -50,17 +50,36 @@ export interface PluginManifest {
   schemaVersion: 1;
   id: string;
   name: string;
+  description?: string;
   version: string;
+  publisher: {
+    id: string;
+    name: string;
+    keyId: string;
+  };
+  engines: {
+    devbox: string;
+    pluginApi: string;
+  };
   type: "ui" | "native";
+  entry: {
+    main: string;
+  };
   activationEvents: string[];
+  permissions: PluginPermission[];
+  locales: Partial<Record<SupportedLocale, string>>;
   contributes: {
     views: ViewContribution[];
     commands?: CommandContribution[];
   };
 }
 
+export type PluginPermission =
+  "clipboard:read" | "clipboard:write" | "storage:read" | "storage:write";
+
 export interface CoreAPI {
   ping(): Promise<CorePingResponse>;
+  readonly version: string;
 }
 
 export interface SettingsAPI {
@@ -68,9 +87,45 @@ export interface SettingsAPI {
   update(key: string, value: JsonValue, expectedRevision?: number): Promise<SettingRecord>;
 }
 
+export interface ClipboardAPI {
+  readText(): Promise<string>;
+  writeText(value: string): Promise<void>;
+}
+
 export interface PluginAPI {
   readonly core: CoreAPI;
   readonly settings: SettingsAPI;
+  readonly clipboard: ClipboardAPI;
+}
+
+export interface InstalledPluginHostContext {
+  readonly apiVersion: string;
+  readonly pluginId: string;
+  readonly version: string;
+  readonly permissions: readonly PluginPermission[];
+}
+
+export interface InstalledPluginBridge extends PluginAPI {
+  reportReady(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    readonly __DEVBOX_PLUGIN__?: InstalledPluginHostContext;
+    readonly __DEVBOX_PLUGIN_API__?: InstalledPluginBridge;
+  }
+}
+
+export function getInstalledPluginBridge(): {
+  context: InstalledPluginHostContext;
+  api: InstalledPluginBridge;
+} {
+  const context = window.__DEVBOX_PLUGIN__;
+  const api = window.__DEVBOX_PLUGIN_API__;
+  if (!context || !api || !context.apiVersion.startsWith("1.")) {
+    throw new Error("当前运行环境不支持此 Plugin API 版本");
+  }
+  return { context, api };
 }
 
 export interface PluginContext {

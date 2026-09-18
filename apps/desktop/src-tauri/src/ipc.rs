@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::domain::DevBoxError;
+use crate::domain::{is_plugin_id, DevBoxError};
 
 pub const API_VERSION: u8 = 1;
 
@@ -21,10 +21,7 @@ impl<T> CommandEnvelope<T> {
                 "apiVersion",
             ));
         }
-        if !matches!(
-            self.plugin_id.as_str(),
-            "devbox.core" | "devbox.builtin.foundation"
-        ) {
+        if !is_plugin_id(&self.plugin_id) {
             return Err(DevBoxError::permission_denied(&self.request_id));
         }
         if self.request_id.is_empty() || self.request_id.len() > 128 {

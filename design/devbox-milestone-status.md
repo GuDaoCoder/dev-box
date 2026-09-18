@@ -70,16 +70,31 @@
 
 ## M2：插件分发基础
 
-状态：**等待新版任务拆解验收后开始**
+状态：**已完成，等待验收**
 
-下一阶段范围：
+完成任务：
 
-- 冻结 Plugin API、插件清单和 `.devbox-plugin` 包格式。
-- 实现 SHA-256 完整性校验、Ed25519 签名验证和发布者信任模型。
-- 实现兼容性检查、安全解包、原子安装、卸载、更新和失败回滚。
-- 使用 SQLite 保存插件、版本、权限授权和安装事件。
-- 使用独立 WebView 加载插件，默认不向插件开放 Tauri IPC。
-- 打通在线目录安装与本地文件安装的统一流水线。
+- [x] 冻结 Plugin API 1.0 最小面、manifest schema 和 `.devbox-plugin` 包格式。
+- [x] 实现可重复打包的 `plugin-pack` CLI、SHA-256 完整性校验和 Ed25519 签名验证。
+- [x] 实现归档限制、路径越界防护、兼容性检查、staging、原子安装和启动恢复。
+- [x] 实现启用、禁用、在线/离线更新、手动回退、运行时失败自动回退和卸载。
+- [x] 使用 SQLite 保存发布者、插件、版本、权限授权和安装事件。
+- [x] 使用独立 WebView、最小 capability 和 CSP 隔离运行时插件。
+- [x] 实现 Host 绑定的插件身份、ready/失败握手、scoped settings 和需用户手势的剪贴板网关。
+- [x] 实现 Installed / Online / Offline 插件中心，中英文安全预检与确认。
+- [x] 生成 1.0.0 / 1.1.0 签名 fixture、本地 Catalog 和统一 Installer 生命周期测试。
+
+本地验证：
+
+- `pnpm check`：通过
+- `pnpm build`：通过
+- `pnpm fixtures:m2` 与两个 fixture 验签：通过
+- `cargo fmt --all --check`：通过
+- `cargo clippy --workspace --all-targets --all-features --offline -- -D warnings`：通过
+- `cargo test --workspace --offline`：通过（12 个 Rust 测试）
+- `pnpm test:e2e`：通过（2 个 Chromium 测试）
+- `pnpm tauri build --no-bundle`：通过（macOS arm64）
+- `pnpm sdk:pack`：4 个公开包均可生成 tarball
 
 退出条件：官方签名的示例插件可通过在线目录和离线文件两种入口安装；篡改包、未知签名、越界文件和不兼容版本会被稳定拒绝；升级失败可恢复到上一版本。
 

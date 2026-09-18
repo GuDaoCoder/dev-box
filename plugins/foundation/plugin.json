@@ -3,8 +3,25 @@
   "id": "devbox.builtin.foundation",
   "name": "Foundation",
   "version": "0.1.0",
+  "publisher": {
+    "id": "devbox",
+    "name": "DevBox Official",
+    "keyId": "0000000000000000"
+  },
+  "engines": {
+    "devbox": ">=0.1.0",
+    "pluginApi": "^1.0.0"
+  },
   "type": "native",
+  "entry": {
+    "main": "dist/index.html"
+  },
   "activationEvents": ["onStartupFinished", "onView:foundation"],
+  "permissions": ["storage:read", "storage:write"],
+  "locales": {
+    "zh-CN": "locales/zh-CN.json",
+    "en-US": "locales/en-US.json"
+  },
   "contributes": {
     "views": [
       {

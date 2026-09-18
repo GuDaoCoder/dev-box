@@ -1,0 +1,27 @@
+{
+  "name": "@devbox/plugin-pack",
+  "version": "0.1.0",
+  "description": "Deterministic packager and verifier for signed DevBox plugin archives.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "devbox-plugin-pack": "./src/cli.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "src/cli.mjs",
+    "src/index.mjs",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test:unit": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
+  }
+}

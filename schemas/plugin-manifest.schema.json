@@ -4,17 +4,83 @@
   "title": "DevBox Plugin Manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "name", "version", "type", "activationEvents", "contributes"],
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "version",
+    "publisher",
+    "engines",
+    "type",
+    "entry",
+    "activationEvents",
+    "permissions",
+    "locales",
+    "contributes"
+  ],
   "properties": {
     "schemaVersion": { "const": 1 },
     "id": { "type": "string", "pattern": "^devbox\\.[a-z0-9.-]+$", "maxLength": 100 },
     "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "description": { "type": "string", "maxLength": 240 },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "keyId"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{1,63}$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "keyId": { "type": "string", "pattern": "^[a-f0-9]{16,64}$" }
+      }
+    },
+    "engines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["devbox", "pluginApi"],
+      "properties": {
+        "devbox": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "pluginApi": { "type": "string", "minLength": 1, "maxLength": 40 }
+      }
+    },
     "type": { "enum": ["ui", "native"] },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["main"],
+      "properties": {
+        "main": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[a-zA-Z0-9._/-]+\\.html$",
+          "maxLength": 200
+        }
+      }
+    },
     "activationEvents": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
-      "uniqueItems": true
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 },
+      "uniqueItems": true,
+      "maxItems": 32
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "enum": ["clipboard:read", "clipboard:write", "storage:read", "storage:write"]
+      },
+      "uniqueItems": true,
+      "maxItems": 16
+    },
+    "locales": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[a-zA-Z0-9._/-]+\\.json$",
+        "maxLength": 200
+      },
+      "propertyNames": { "enum": ["zh-CN", "en-US"] }
     },
     "contributes": {
       "type": "object",
@@ -23,27 +89,31 @@
       "properties": {
         "views": {
           "type": "array",
+          "maxItems": 16,
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": ["id", "titleKey", "icon", "order"],
             "properties": {
-              "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-              "titleKey": { "type": "string", "minLength": 3 },
-              "icon": { "enum": ["box", "braces", "clock", "coffee", "database", "globe"] },
-              "order": { "type": "integer", "minimum": 0 }
+              "id": { "type": "string", "pattern": "^[a-z0-9-]+$", "maxLength": 80 },
+              "titleKey": { "type": "string", "minLength": 3, "maxLength": 120 },
+              "icon": {
+                "enum": ["box", "braces", "clock", "code", "fingerprint", "plug"]
+              },
+              "order": { "type": "integer", "minimum": 0, "maximum": 10000 }
             }
           }
         },
         "commands": {
           "type": "array",
+          "maxItems": 32,
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": ["id", "titleKey"],
             "properties": {
-              "id": { "type": "string", "pattern": "^[a-z0-9.-]+$" },
-              "titleKey": { "type": "string", "minLength": 3 }
+              "id": { "type": "string", "pattern": "^[a-z0-9.-]+$", "maxLength": 120 },
+              "titleKey": { "type": "string", "minLength": 3, "maxLength": 120 }
             }
           }
         }

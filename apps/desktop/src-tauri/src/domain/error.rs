@@ -52,4 +52,54 @@ impl DevBoxError {
             retryable: true,
         }
     }
+
+    pub fn not_found(correlation_id: &str, resource: &str) -> Self {
+        Self {
+            code: "NOT_FOUND",
+            message_key: "errors:NOT_FOUND",
+            details: Some(json!({ "resource": resource })),
+            correlation_id: correlation_id.to_owned(),
+            retryable: false,
+        }
+    }
+
+    pub fn plugin_package(correlation_id: &str, reason: impl Into<String>) -> Self {
+        Self {
+            code: "PLUGIN_PACKAGE_INVALID",
+            message_key: "errors:PLUGIN_PACKAGE_INVALID",
+            details: Some(json!({ "reason": reason.into() })),
+            correlation_id: correlation_id.to_owned(),
+            retryable: false,
+        }
+    }
+
+    pub fn incompatible(correlation_id: &str, reason: impl Into<String>) -> Self {
+        Self {
+            code: "PLUGIN_INCOMPATIBLE",
+            message_key: "errors:PLUGIN_INCOMPATIBLE",
+            details: Some(json!({ "reason": reason.into() })),
+            correlation_id: correlation_id.to_owned(),
+            retryable: false,
+        }
+    }
+
+    pub fn network(correlation_id: &str, reason: impl Into<String>) -> Self {
+        Self {
+            code: "NETWORK_ERROR",
+            message_key: "errors:NETWORK_ERROR",
+            details: Some(json!({ "reason": reason.into() })),
+            correlation_id: correlation_id.to_owned(),
+            retryable: true,
+        }
+    }
+
+    pub fn internal(correlation_id: &str, reason: impl Into<String>) -> Self {
+        Self {
+            code: "INTERNAL",
+            message_key: "errors:INTERNAL",
+            details: Some(json!({ "reason": reason.into() })),
+            correlation_id: correlation_id.to_owned(),
+            retryable: false,
+        }
+    }
 }

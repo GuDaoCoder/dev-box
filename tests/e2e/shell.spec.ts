@@ -10,3 +10,11 @@ test("启动 DevBox 应用壳层并打开命令面板", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+K");
   await expect(page.getByRole("dialog", { name: "Command palette" })).toBeVisible();
 });
+
+test("打开插件中心", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Plugin Center" }).click();
+
+  await expect(page.getByRole("heading", { name: "Plugin Center" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Offline Install/ })).toBeVisible();
+});

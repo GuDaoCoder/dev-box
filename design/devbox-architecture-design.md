@@ -344,16 +344,26 @@ json-tool-1.0.0.devbox-plugin
 
 ```json
 {
-  "catalogVersion": 1,
+  "schemaVersion": 1,
   "generatedAt": "2026-09-17T00:00:00Z",
   "plugins": [
     {
       "id": "devbox.official.json-tool",
-      "version": "1.0.0",
-      "packageUrl": "https://plugins.devbox.example/json-tool/1.0.0.devbox-plugin",
-      "sha256": "...",
-      "signature": "...",
-      "minDevboxVersion": "0.2.0"
+      "name": "JSON Tool",
+      "description": "Format and inspect JSON locally.",
+      "publisher": "DevBox Official",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "packageUrl": "https://cdn.devbox.app/json-tool/1.0.0.devbox-plugin",
+          "packageSha256": "...",
+          "devbox": ">=0.1.0, <0.2.0",
+          "pluginApi": "^1.0.0",
+          "releasedAt": "2026-09-18T00:00:00Z",
+          "releaseNotes": "Initial release",
+          "revoked": false
+        }
+      ]
     }
   ]
 }
@@ -407,27 +417,29 @@ webview label → pluginId → installedVersion → grantedPermissions
 
 ```ts
 interface PluginAPI {
-  readonly context: {
-    pluginId: string;
+  readonly core: {
     version: string;
-    locale: "zh-CN" | "en-US";
-    theme: "light" | "dark";
+    ping(): Promise<CorePingResponse>;
   };
   readonly settings: {
-    get(key: string): Promise<JsonValue | undefined>;
-    update(key: string, value: JsonValue, expectedRevision?: number): Promise<number>;
+    get(key: string): Promise<SettingRecord | undefined>;
+    update(key: string, value: JsonValue, expectedRevision?: number): Promise<SettingRecord>;
   };
   readonly clipboard: {
+    readText(): Promise<string>;
     writeText(value: string): Promise<void>;
   };
-  readonly host: {
-    openCommandPalette(): Promise<void>;
-    reportReady(): Promise<void>;
-  };
+}
+
+interface InstalledPluginHostContext {
+    pluginId: string;
+    version: string;
+    apiVersion: string;
+    permissions: PluginPermission[];
 }
 ```
 
-首批四个工具不需要文件、网络或进程权限。Clipboard API 只允许由明确用户手势触发的文本写入。
+安装插件通过 Host 注入的只读 context 和 bridge 获得 API，并在 5 秒内报告 ready。首批四个工具不需要文件、网络或进程权限。Clipboard API 只接受文本，并且必须消费 Host 生成的短时、一次性用户手势令牌。
 
 ### 7.3 三层校验
 

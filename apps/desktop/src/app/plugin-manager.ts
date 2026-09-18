@@ -90,7 +90,7 @@ export class PluginManager {
     const context: PluginContext = {
       pluginId,
       manifest: plugin.manifest,
-      api: createPluginAPI(pluginId),
+      api: createPluginAPI(pluginId, plugin.manifest.permissions),
       subscriptions,
       registerView: (viewId, component) => {
         const contribution = plugin.manifest.contributes.views.find((view) => view.id === viewId);

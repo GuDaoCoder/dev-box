@@ -11,4 +11,4 @@ pnpm tauri dev
 pnpm check
 ```
 
-The M1 shell includes the built-in Foundation plugin, command palette, light/dark themes and Chinese/English language switching. Use the Foundation page to validate the controlled Host command and SQLite-backed settings flow.
+The desktop now includes the M1 shell and the M2 Plugin Center. M2 adds signed online/offline package preflight, atomic installation and rollback, SQLite-backed plugin state, and isolated plugin WebView windows without Tauri IPC permissions.

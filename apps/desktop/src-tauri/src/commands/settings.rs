@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::State;
+use tauri::{State, WebviewWindow};
 
 use crate::{
     domain::DevBoxError,
@@ -37,10 +37,12 @@ pub struct SettingsUpdateResponse {
 
 #[tauri::command]
 pub fn settings_get(
+    window: WebviewWindow,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<SettingsGetRequest>,
 ) -> Result<SettingsGetResponse, DevBoxError> {
     envelope.validate()?;
+    validate_caller_permission(&window, &state, &envelope, "storage:read")?;
     validate_setting_key(&envelope.payload.key, envelope.request_id())?;
     let record = state.settings.get(
         envelope.plugin_id(),
@@ -52,10 +54,12 @@ pub fn settings_get(
 
 #[tauri::command]
 pub fn settings_update(
+    window: WebviewWindow,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<SettingsUpdateRequest>,
 ) -> Result<SettingsUpdateResponse, DevBoxError> {
     envelope.validate()?;
+    validate_caller_permission(&window, &state, &envelope, "storage:write")?;
     validate_setting_key(&envelope.payload.key, envelope.request_id())?;
     let serialized = serde_json::to_vec(&envelope.payload.value)
         .map_err(|_| DevBoxError::invalid_argument(envelope.request_id(), "value"))?;
@@ -73,4 +77,31 @@ pub fn settings_update(
         envelope.request_id(),
     )?;
     Ok(SettingsUpdateResponse { record })
+}
+
+fn validate_caller_permission<T>(
+    window: &WebviewWindow,
+    state: &State<'_, AppState>,
+    envelope: &CommandEnvelope<T>,
+    permission: &str,
+) -> Result<(), DevBoxError> {
+    if window.label() == "main" {
+        if matches!(
+            envelope.plugin_id(),
+            "devbox.core" | "devbox.builtin.foundation"
+        ) {
+            return Ok(());
+        }
+    } else if state
+        .runtime
+        .validate_caller(window.label(), envelope.plugin_id())
+        && state
+            .plugins
+            .grants(envelope.plugin_id(), envelope.request_id())?
+            .iter()
+            .any(|grant| grant.permission == permission && grant.granted)
+    {
+        return Ok(());
+    }
+    Err(DevBoxError::permission_denied(envelope.request_id()))
 }

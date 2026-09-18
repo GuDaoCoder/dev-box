@@ -17,3 +17,8 @@ apps/desktop/src-tauri/gen/
 .env
 .env.*
 !.env.example
+fixtures/m2/generated/
+!fixtures/m2/v1/dist/
+!fixtures/m2/v1/dist/**
+!fixtures/m2/v2/dist/
+!fixtures/m2/v2/dist/**
