@@ -13,7 +13,7 @@
 | M0 工程基线 | 已完成 | 建立可持续开发工程 | workspace、Tauri、CI、测试 | 工程可检查和构建 |
 | M1 Shell 与平台骨架 | 已完成 | 打通平台最小闭环 | App Shell、i18n、Plugin SDK、IPC、SQLite | Foundation 插件可激活、调用 Host、保存设置 |
 | M2 插件分发基础 | 已完成，已验收 | 建立安全、可恢复的运行时安装能力 | 包格式、签名、Installer、隔离 WebView、在线/离线安装 | 同一签名示例包可在线与离线安装、启停、更新、回退、卸载 |
-| M3 官方通用工具 | 进行中 | 用独立仓库验证真实插件交付 | `devbox-tools`、JSON、Timestamp、Encoding、UUID/Hash | 四个工具均以签名包安装并双语可用 |
+| M3 官方通用工具 | 已完成，待验收 | 用独立仓库验证真实插件交付 | `devbox-tools`、JSON、Timestamp、Encoding、UUID/Hash | 四个工具均以签名包安装并双语可用 |
 | M4 Plugin Center 体验 | 待开发 | 完善用户可见的插件管理 | 在线目录、更新、来源/权限、恢复、开发者模式 | 插件管理关键流程中英文 E2E 通过 |
 | M5 稳定性与发布 | 待开发 | 达到三平台可分发标准 | 安全加固、性能、文档、安装包 | 发布检查表全部通过 |
 
@@ -222,6 +222,16 @@ M0/M1 已完成
 | E7-14 | P1 | M | UUID v4 单个/批量生成和数量限制 | E7-13 | 格式正确，批量不会阻塞 UI |
 | E7-15 | P1 | M | SHA-256/384/512、Hex/Base64 输出和输入统计 | E7-13 | 标准测试向量一致，标明摘要不是加密 |
 | E7-16 | P1 | M | 算法、组件、双语和安装包测试 | E7-13～15 | Unicode、空输入和大输入策略通过 |
+
+### M3 实施记录
+
+- 已创建独立 Git 仓库 `/Users/zane.zou/Projects/devbox-tools`，只消费固定版本的公开 SDK/UI/打包制品。
+- 已实现 JSON、Timestamp、Encoding、UUID/Hash 四个双语 UI 插件及公共界面 toolkit。
+- 已建立 Changesets、三平台 CI、tag release、签名打包、静态 Catalog、兼容矩阵和本地联调说明。
+- 已生成四个独立 `.devbox-plugin` 验收包；签名、逐文件校验、入口、语言包和目录哈希验证通过。
+- 完整检查结果：8 个测试文件、24 个测试用例通过，lint、类型检查、构建和发布验证均通过。
+- 工具仓库提交：`a3761f1`（M3 实现）、`fbc86c8`（发布元数据完善）。
+- 当前停在 M3 验收点；验收通过后再开始 M4，不提前实现 E8。
 
 ## 11. E8：Plugin Center 完整体验
 
