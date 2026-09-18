@@ -13,6 +13,10 @@ use crate::{
 };
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EmptyRequest {}
+
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct OfflinePreflightRequest {
     path: String,
@@ -154,7 +158,7 @@ fn close_plugin_window(app: &AppHandle, state: &State<'_, AppState>, plugin_id: 
 pub fn plugins_list(
     window: WebviewWindow,
     state: State<'_, AppState>,
-    envelope: CommandEnvelope<()>,
+    envelope: CommandEnvelope<EmptyRequest>,
 ) -> Result<InstalledPluginsResponse, DevBoxError> {
     validate_core(&window, &envelope)?;
     Ok(InstalledPluginsResponse {
@@ -576,4 +580,35 @@ pub async fn plugin_open(
         }
     });
     Ok(PluginOpenedResponse { label })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn 插件列表接受空对象请求() {
+        let envelope = serde_json::from_value::<CommandEnvelope<EmptyRequest>>(serde_json::json!({
+            "apiVersion": 1,
+            "pluginId": "devbox.core",
+            "requestId": "plugins-list-test",
+            "payload": {}
+        }))
+        .expect("空对象应可反序列化");
+
+        envelope.validate().expect("请求包应通过校验");
+    }
+
+    #[test]
+    fn 插件列表拒绝未知参数() {
+        assert!(
+            serde_json::from_value::<CommandEnvelope<EmptyRequest>>(serde_json::json!({
+                "apiVersion": 1,
+                "pluginId": "devbox.core",
+                "requestId": "plugins-list-test",
+                "payload": { "unexpected": true }
+            }))
+            .is_err()
+        );
+    }
 }
