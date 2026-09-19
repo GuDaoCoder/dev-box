@@ -10,7 +10,10 @@ interface AppStore {
   paletteOpen: boolean;
   tabs: string[];
   theme: ThemePreference;
+  closeAllTabs: () => void;
+  closeOtherTabs: (tabId: string) => void;
   closeTab: (tabId: string) => void;
+  closeTabsToRight: (tabId: string) => void;
   openTab: (tabId: string) => void;
   reorderTab: (sourceId: string, targetId: string) => void;
   setActiveTabId: (tabId?: string) => void;
@@ -25,12 +28,26 @@ export const useAppStore = create<AppStore>((set) => ({
   paletteOpen: false,
   tabs: ["tool.json"],
   theme: "dark",
+  closeAllTabs: () => set({ activeTabId: undefined, tabs: [] }),
+  closeOtherTabs: (tabId) =>
+    set((state) => (state.tabs.includes(tabId) ? { activeTabId: tabId, tabs: [tabId] } : state)),
   closeTab: (tabId) =>
     set((state) => {
       const index = state.tabs.indexOf(tabId);
       const tabs = state.tabs.filter((id) => id !== tabId);
       if (state.activeTabId !== tabId) return { tabs };
       return { tabs, activeTabId: tabs[Math.min(index, tabs.length - 1)] };
+    }),
+  closeTabsToRight: (tabId) =>
+    set((state) => {
+      const index = state.tabs.indexOf(tabId);
+      if (index < 0 || index === state.tabs.length - 1) return state;
+      const tabs = state.tabs.slice(0, index + 1);
+      return {
+        tabs,
+        activeTabId:
+          state.activeTabId && tabs.includes(state.activeTabId) ? state.activeTabId : tabId,
+      };
     }),
   openTab: (tabId) =>
     set((state) => ({

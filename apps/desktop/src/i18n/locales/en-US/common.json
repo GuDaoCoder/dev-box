@@ -37,6 +37,13 @@
     "emptyTitle": "No feature is open",
     "emptyDescription": "Choose a feature from the tree on the left.",
     "closeTab": "Close {{name}}",
+    "tabMenu": {
+      "label": "Tab actions",
+      "closeCurrent": "Close Tab",
+      "closeAll": "Close All Tabs",
+      "closeRight": "Close Tabs to the Right",
+      "closeOthers": "Close Other Tabs"
+    },
     "pluginLoading": "Loading plugin view…",
     "pluginBrowserOnly": "Plugin views are available only in the DevBox desktop app."
   },

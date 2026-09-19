@@ -37,6 +37,13 @@
     "emptyTitle": "尚未打开功能",
     "emptyDescription": "从左侧功能树选择一个功能开始使用。",
     "closeTab": "关闭 {{name}}",
+    "tabMenu": {
+      "label": "标签页操作",
+      "closeCurrent": "关闭当前",
+      "closeAll": "关闭所有",
+      "closeRight": "关闭右侧",
+      "closeOthers": "关闭其他"
+    },
     "pluginLoading": "正在载入插件视图…",
     "pluginBrowserOnly": "插件视图只能在 DevBox 桌面应用中运行。"
   },

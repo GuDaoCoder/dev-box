@@ -37,4 +37,26 @@ describe("工作区标签状态", () => {
 
     expect(useAppStore.getState().tabs).toEqual(["tool.encoding", "tool.json", "tool.timestamp"]);
   });
+
+  it("支持关闭右侧、关闭其他和关闭所有", () => {
+    useAppStore.setState({
+      activeTabId: "tool.encoding",
+      tabs: ["tool.json", "tool.timestamp", "tool.encoding"],
+    });
+    useAppStore.getState().closeTabsToRight("tool.json");
+    expect(useAppStore.getState()).toMatchObject({ activeTabId: "tool.json", tabs: ["tool.json"] });
+
+    useAppStore.setState({
+      activeTabId: "tool.json",
+      tabs: ["tool.json", "tool.timestamp", "tool.encoding"],
+    });
+    useAppStore.getState().closeOtherTabs("tool.timestamp");
+    expect(useAppStore.getState()).toMatchObject({
+      activeTabId: "tool.timestamp",
+      tabs: ["tool.timestamp"],
+    });
+
+    useAppStore.getState().closeAllTabs();
+    expect(useAppStore.getState()).toMatchObject({ activeTabId: undefined, tabs: [] });
+  });
 });

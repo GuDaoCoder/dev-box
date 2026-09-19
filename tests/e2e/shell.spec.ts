@@ -19,6 +19,10 @@ test("使用多标签打开工具并进入本地插件管理", async ({ page }) 
     "aria-selected",
     "true",
   );
+  await page.getByRole("tab", { name: "Timestamp Tool" }).click({ button: "right" });
+  await expect(page.getByRole("menu", { name: "Tab actions" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Close Other Tabs" })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: "Plugin Manager" }).click();
 

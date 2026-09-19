@@ -739,6 +739,7 @@ textarea:focus-visible {
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
+  user-select: none;
 }
 .workspace-tabs > button {
   display: flex;
@@ -773,6 +774,35 @@ textarea:focus-visible {
 }
 .tab-close:hover {
   background: var(--bg-hover);
+}
+.tab-context-menu {
+  position: fixed;
+  z-index: 100;
+  display: grid;
+  width: 208px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 14px 36px var(--shadow);
+}
+.tab-context-menu button {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+.tab-context-menu button:hover,
+.tab-context-menu button:focus-visible {
+  background: var(--bg-hover);
+}
+.tab-context-menu button:disabled {
+  color: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  cursor: default;
 }
 .workspace-content,
 .workspace-panel {

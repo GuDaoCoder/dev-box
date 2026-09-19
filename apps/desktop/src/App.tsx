@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { ChevronDown, ChevronRight, Command, Moon, Search, Sun, X } from "lucide-react";
@@ -37,6 +38,12 @@ type WorkspaceFeature = {
   builtin?: BuiltinFeature;
   plugin?: InstalledPlugin;
   pluginViewId?: string;
+};
+
+type TabContextMenuState = {
+  tabId: string;
+  x: number;
+  y: number;
 };
 
 class FeatureErrorBoundary extends Component<
@@ -120,7 +127,10 @@ function App() {
   const { t, i18n } = useTranslation();
   const activeTabId = useAppStore((state) => state.activeTabId);
   const tabs = useAppStore((state) => state.tabs);
+  const closeAllTabs = useAppStore((state) => state.closeAllTabs);
+  const closeOtherTabs = useAppStore((state) => state.closeOtherTabs);
   const closeTab = useAppStore((state) => state.closeTab);
+  const closeTabsToRight = useAppStore((state) => state.closeTabsToRight);
   const openTab = useAppStore((state) => state.openTab);
   const reorderTab = useAppStore((state) => state.reorderTab);
   const paletteOpen = useAppStore((state) => state.paletteOpen);
@@ -131,6 +141,8 @@ function App() {
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [expanded, setExpanded] = useState(() => new Set(featureCategories.map((item) => item.id)));
   const [draggedTab, setDraggedTab] = useState<string>();
+  const [tabContextMenu, setTabContextMenu] = useState<TabContextMenuState>();
+  const tabContextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void Promise.all([
@@ -231,6 +243,52 @@ function App() {
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [setPaletteOpen]);
+
+  useEffect(() => {
+    if (!tabContextMenu) return;
+    const closeMenu = () => setTabContextMenu(undefined);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    const focusFrame = window.requestAnimationFrame(() => {
+      tabContextMenuRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+    });
+    window.addEventListener("blur", closeMenu);
+    window.addEventListener("resize", closeMenu);
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("blur", closeMenu);
+      window.removeEventListener("resize", closeMenu);
+      document.removeEventListener("pointerdown", closeMenu);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [tabContextMenu]);
+
+  function runTabMenuAction(action: () => void) {
+    setTabContextMenu(undefined);
+    action();
+  }
+
+  function handleTabMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const items = [
+      ...event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
+    ];
+    if (!items.length) return;
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? items.length - 1
+          : event.key === "ArrowDown"
+            ? (currentIndex + 1) % items.length
+            : (currentIndex - 1 + items.length) % items.length;
+    items[nextIndex]?.focus();
+  }
 
   function renderFeature(feature: WorkspaceFeature, active: boolean) {
     if (feature.plugin && feature.pluginViewId) {
@@ -346,6 +404,17 @@ function App() {
                   onClick={() => openTab(tabId)}
                   onDragStart={() => setDraggedTab(tabId)}
                   onDragOver={(event) => event.preventDefault()}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const menuWidth = 208;
+                    const menuHeight = 156;
+                    setTabContextMenu({
+                      tabId,
+                      x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8)),
+                      y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 8)),
+                    });
+                  }}
                   onDrop={() => {
                     if (draggedTab) reorderTab(draggedTab, tabId);
                     setDraggedTab(undefined);
@@ -378,6 +447,45 @@ function App() {
               );
             })}
           </div>
+          {tabContextMenu ? (
+            <div
+              aria-label={t("workspace.tabMenu.label")}
+              className="tab-context-menu"
+              onContextMenu={(event) => event.preventDefault()}
+              onKeyDown={handleTabMenuKeyDown}
+              onPointerDown={(event) => event.stopPropagation()}
+              ref={tabContextMenuRef}
+              role="menu"
+              style={{ left: tabContextMenu.x, top: tabContextMenu.y }}
+            >
+              <button
+                onClick={() => runTabMenuAction(() => closeTab(tabContextMenu.tabId))}
+                role="menuitem"
+                type="button"
+              >
+                {t("workspace.tabMenu.closeCurrent")}
+              </button>
+              <button onClick={() => runTabMenuAction(closeAllTabs)} role="menuitem" type="button">
+                {t("workspace.tabMenu.closeAll")}
+              </button>
+              <button
+                disabled={tabs.indexOf(tabContextMenu.tabId) === tabs.length - 1}
+                onClick={() => runTabMenuAction(() => closeTabsToRight(tabContextMenu.tabId))}
+                role="menuitem"
+                type="button"
+              >
+                {t("workspace.tabMenu.closeRight")}
+              </button>
+              <button
+                disabled={tabs.length <= 1}
+                onClick={() => runTabMenuAction(() => closeOtherTabs(tabContextMenu.tabId))}
+                role="menuitem"
+                type="button"
+              >
+                {t("workspace.tabMenu.closeOthers")}
+              </button>
+            </div>
+          ) : null}
           <div className="workspace-content">
             {tabs.length ? (
               tabs.map((tabId) => {

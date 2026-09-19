@@ -43,6 +43,28 @@ describe("App", () => {
     expect(screen.getAllByRole("tab")).toHaveLength(1);
   });
 
+  it("右键标签显示批量关闭菜单", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+    fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
+    fireEvent.click(screen.getByRole("button", { name: "Encoding Tool" }));
+
+    fireEvent.contextMenu(screen.getByRole("tab", { name: "Timestamp Tool" }), {
+      clientX: 200,
+      clientY: 100,
+    });
+
+    expect(screen.getByRole("menu", { name: "Tab actions" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Close Tab" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Close All Tabs" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Close Tabs to the Right" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "Close Other Tabs" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "Close Tabs to the Right" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.queryByRole("tab", { name: "Encoding Tool" })).not.toBeInTheDocument();
+  });
+
   it("使用快捷键打开命令面板", async () => {
     render(<App />);
 
