@@ -23,7 +23,7 @@ async function createFixture() {
       type: "ui",
       entry: { main: "dist/index.html" },
       activationEvents: ["onView:fixture"],
-      permissions: ["storage:read"],
+      permissions: ["storage:read", "java:execute"],
       locales: {},
       contributes: {
         views: [
@@ -55,6 +55,7 @@ describe("plugin-pack", () => {
     const result = await verifyPluginArchive({ archive: output, publicKey });
 
     expect(result.manifest.id).toBe("devbox.fixture");
+    expect(result.manifest.permissions).toContain("java:execute");
     expect(result.archiveSha256).toHaveLength(64);
   });
 

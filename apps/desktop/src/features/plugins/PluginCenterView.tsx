@@ -299,6 +299,12 @@ export function PluginCenterView({
                 <p>{t("pluginCenter.confirm.noPermissions")}</p>
               )}
             </div>
+            {preflight.summary.manifest.permissions.includes("java:execute") ? (
+              <div className="plugin-warning danger">
+                <ShieldAlert aria-hidden="true" size={20} />
+                <span>{t("pluginCenter.confirm.javaExecuteWarning")}</span>
+              </div>
+            ) : null}
             <div className="confirmation-actions">
               <Button disabled={busy} onClick={() => void run(cancelInstall)} variant="ghost">
                 {t("pluginCenter.actions.cancel")}

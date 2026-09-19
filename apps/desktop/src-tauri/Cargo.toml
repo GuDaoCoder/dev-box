@@ -32,3 +32,4 @@ semver = "1"
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4"] }
 zip = { version = "6", default-features = false, features = ["deflate"] }
+wait-timeout = "0.2"

@@ -11,10 +11,13 @@ DevBox treats local ZIP archives and plugin code as untrusted input. The Rust Ho
 - Plugin WebView identity is bound by the Host. Calls check the window, plugin ID, version, secret, grant, and user gesture where required.
 - Plugin assets receive a CSP that blocks network, objects, base URIs, and form submission, plus `nosniff`.
 - Repeated plugin runtime failures can trigger rollback or disable the plugin.
+- `java:execute` requires an install grant and a one-time user gesture, with input, timeout, output, and per-plugin concurrency limits. JShell still runs with the current user's privileges and is not an operating-system sandbox.
 
 ## User responsibility
 
 Unsigned does not necessarily mean malicious, but publisher identity and content integrity cannot be verified. Install ZIP files only from sources you trust, review permissions, and do not expose passwords, tokens, private keys, or production data to an unknown plugin. Disable or uninstall suspicious plugins and retain the ZIP SHA-256 for investigation.
+
+After granting `java:execute`, snippets may access local files, the network, or launch other processes. Run only code you wrote or reviewed.
 
 ## Current limitations
 

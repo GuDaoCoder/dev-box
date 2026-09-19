@@ -10,6 +10,7 @@ use crate::{
     domain::DevBoxError,
     installer::InstallPreflight,
     ipc::CommandEnvelope,
+    java_runner::{validate_request, JavaExecutionResult},
     repositories::{InstalledPluginRecord, PluginGrantRecord},
     state::AppState,
 };
@@ -147,6 +148,15 @@ pub struct PluginClipboardRequest {
     gesture_token: String,
     #[serde(default)]
     value: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PluginJavaExecuteRequest {
+    gesture_token: String,
+    source: String,
+    timeout_ms: u64,
+    max_output_bytes: usize,
 }
 
 fn validate_core<T>(window: &Webview, envelope: &CommandEnvelope<T>) -> Result<(), DevBoxError> {
@@ -408,6 +418,37 @@ pub fn plugin_clipboard_write(
         .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))
 }
 
+#[tauri::command]
+pub async fn plugin_java_execute(
+    window: Webview,
+    state: State<'_, AppState>,
+    envelope: CommandEnvelope<PluginJavaExecuteRequest>,
+) -> Result<JavaExecutionResult, DevBoxError> {
+    validate_plugin_capability(&window, &state, &envelope, "java:execute")?;
+    validate_request(
+        &envelope.payload.source,
+        envelope.payload.timeout_ms,
+        envelope.payload.max_output_bytes,
+    )
+    .map_err(|field| DevBoxError::invalid_argument(envelope.request_id(), field))?;
+
+    let service = state.java_runner.clone();
+    let permit = service
+        .acquire(envelope.plugin_id())
+        .map_err(|reason| DevBoxError::internal(envelope.request_id(), reason))?;
+    let source = envelope.payload.source.clone();
+    let timeout_ms = envelope.payload.timeout_ms;
+    let max_output_bytes = envelope.payload.max_output_bytes;
+    let correlation_id = envelope.request_id().to_owned();
+    tauri::async_runtime::spawn_blocking(move || {
+        let _permit = permit;
+        service.execute(&source, timeout_ms, max_output_bytes)
+    })
+    .await
+    .map_err(|error| DevBoxError::internal(&correlation_id, error.to_string()))?
+    .map_err(|reason| DevBoxError::internal(&correlation_id, reason))
+}
+
 fn validate_plugin_capability<T>(
     window: &Webview,
     state: &State<'_, AppState>,
@@ -440,6 +481,12 @@ trait ClipboardGesture {
 }
 
 impl ClipboardGesture for PluginClipboardRequest {
+    fn gesture_token(&self) -> &str {
+        &self.gesture_token
+    }
+}
+
+impl ClipboardGesture for PluginJavaExecuteRequest {
     fn gesture_token(&self) -> &str {
         &self.gesture_token
     }
@@ -529,10 +576,10 @@ pub async fn plugin_open(
         "const __devboxReportFailure=()=>__devboxInvoke('plugin_report_failure',{version:window.__DEVBOX_PLUGIN__.version,bridgeSecret:'",
         &identity.bridge_secret,
         "'}).catch(()=>{});addEventListener('error',__devboxReportFailure,true);addEventListener('unhandledrejection',__devboxReportFailure,true);",
-        "const __devboxWithGesture=async(command,payload={})=>{const gestureToken=await __devboxGesture;__devboxGesture=undefined;if(!gestureToken)throw new Error('clipboard requires a recent user gesture');return __devboxInvoke(command,{...payload,gestureToken})};",
+        "const __devboxWithGesture=async(command,payload={})=>{const gestureToken=await __devboxGesture;__devboxGesture=undefined;if(!gestureToken)throw new Error('this operation requires a recent user gesture');return __devboxInvoke(command,{...payload,gestureToken})};",
         "Object.defineProperty(window,'__DEVBOX_PLUGIN_API__',{value:Object.freeze({reportReady:()=>__devboxInvoke('plugin_report_ready',{version:window.__DEVBOX_PLUGIN__.version}),core:Object.freeze({version:'",
         env!("CARGO_PKG_VERSION"),
-        "',ping:()=>__devboxInvoke('core_ping',{clientTime:new Date().toISOString()})}),settings:Object.freeze({get:(key)=>__devboxInvoke('settings_get',{key}).then(response=>response.record),update:(key,value,expectedRevision)=>__devboxInvoke('settings_update',{key,value,expectedRevision}).then(response=>response.record)}),clipboard:Object.freeze({readText:()=>__devboxWithGesture('plugin_clipboard_read'),writeText:(value)=>__devboxWithGesture('plugin_clipboard_write',{value})})}),writable:false,configurable:false});",
+        "',ping:()=>__devboxInvoke('core_ping',{clientTime:new Date().toISOString()})}),settings:Object.freeze({get:(key)=>__devboxInvoke('settings_get',{key}).then(response=>response.record),update:(key,value,expectedRevision)=>__devboxInvoke('settings_update',{key,value,expectedRevision}).then(response=>response.record)}),clipboard:Object.freeze({readText:()=>__devboxWithGesture('plugin_clipboard_read'),writeText:(value)=>__devboxWithGesture('plugin_clipboard_write',{value})}),java:Object.freeze({execute:(request)=>__devboxWithGesture('plugin_java_execute',request)})}),writable:false,configurable:false});",
         "window.dispatchEvent(new CustomEvent('devbox:host-ready',{detail:window.__DEVBOX_PLUGIN__}));})();",
     ]
     .concat();

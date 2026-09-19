@@ -121,6 +121,7 @@ impl PluginManifest {
         let allowed_permissions = [
             "clipboard:read",
             "clipboard:write",
+            "java:execute",
             "storage:read",
             "storage:write",
         ];

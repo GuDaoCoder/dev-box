@@ -54,5 +54,9 @@ for (const policy of [
 assert.ok(pluginCommands.includes('window.label() != "main"'), "管理命令必须校验主 WebView 身份");
 assert.ok(pluginCommands.includes("validate_bridge_secret"), "插件失败上报必须校验桥接密钥");
 assert.ok(pluginCommands.includes("consume_gesture_token"), "剪贴板命令必须消费用户手势令牌");
+assert.ok(
+  pluginCommands.includes('validate_plugin_capability(&window, &state, &envelope, "java:execute")'),
+  "Java 执行必须校验插件授权和用户手势",
+);
 
 console.log("Security configuration checks passed.");

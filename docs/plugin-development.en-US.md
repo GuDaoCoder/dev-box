@@ -53,7 +53,9 @@ my-plugin/
 }
 ```
 
-Every view declares a category, bilingual category titles, a feature order, and an icon. Supported icons are `binary`, `box`, `braces`, `clock`, `code`, `fingerprint`, and `plug`. The only available permissions are `storage:read`, `storage:write`, `clipboard:read`, and `clipboard:write`.
+Every view declares a category, bilingual category titles, a feature order, and an icon. Supported icons are `binary`, `box`, `braces`, `clock`, `code`, `fingerprint`, and `plug`. Available permissions are `storage:read`, `storage:write`, `clipboard:read`, `clipboard:write`, and `java:execute`.
+
+`java:execute` runs Java snippets through JShell from a system JDK 17 or newer. Calls require a recent trusted user gesture. The Host limits each request to 64 KiB of source, 5 seconds of execution, and 256 KiB of output, with at most one active run per plugin. This capability is not an operating-system sandbox: code runs with the current user's privileges and may access local files, the network, or other processes. A plugin must explain this risk before execution and must not present the capability as a secure sandbox.
 
 ## Validate and package
 
@@ -89,6 +91,7 @@ Never commit production private keys. Fixture keys in this repository are for te
 - Plugin CSP blocks network connections.
 - Storage is scoped by plugin ID and checked against user grants.
 - Clipboard calls require grants; sensitive writes also require a short-lived, one-time user-gesture token.
+- Java snippet execution requires the `java:execute` grant and a short-lived, one-time user-gesture token. A plugin can submit only source and resource limits; it cannot select the JShell executable or command-line arguments.
 - Do not rely on `file://`, absolute or parent paths, symbolic links, or remote scripts.
 
 Package limits are 25 MiB archived, 50 MiB expanded, 8 MiB per file, 512 files, and a maximum per-file compression ratio of 100.

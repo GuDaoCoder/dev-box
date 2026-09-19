@@ -134,7 +134,8 @@
       "publisher": "Publisher",
       "signature": "Signature",
       "permissions": "Requested permissions",
-      "noPermissions": "This plugin requests no Host permissions."
+      "noPermissions": "This plugin requests no Host permissions.",
+      "javaExecuteWarning": "This permission lets the plugin execute Java through JShell. Code runs with the current user's privileges and may access local files, the network, or other processes. Run only code you understand and trust."
     },
     "confirmUninstall": {
       "plugin": "Uninstall {{name}}?",

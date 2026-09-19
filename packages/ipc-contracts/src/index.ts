@@ -67,7 +67,22 @@ export interface SettingsUpdateResponse {
 }
 
 export type PluginPermission =
-  "clipboard:read" | "clipboard:write" | "storage:read" | "storage:write";
+  "clipboard:read" | "clipboard:write" | "java:execute" | "storage:read" | "storage:write";
+
+export interface JavaExecutionRequest {
+  source: string;
+  timeoutMs: number;
+  maxOutputBytes: number;
+}
+
+export interface JavaExecutionResult {
+  status: "success" | "error" | "timeout";
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  durationMs: number;
+  truncated: boolean;
+}
 
 export interface RuntimePluginManifest {
   schemaVersion: 1;

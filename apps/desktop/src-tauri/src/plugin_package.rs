@@ -328,7 +328,7 @@ pub(crate) mod tests {
             "type": "ui",
             "entry": { "main": "dist/index.html" },
             "activationEvents": ["onView:fixture"],
-            "permissions": [],
+            "permissions": ["java:execute"],
             "locales": {},
             "contributes": {
                 "views": [{

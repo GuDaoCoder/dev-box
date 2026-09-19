@@ -8,7 +8,7 @@
 >
 > 核心栈：Tauri 2、React、TypeScript、Vite、Rust、SQLite
 >
-> 仓库边界：所有平台与内置工具代码统一位于 `dev-box`
+> 仓库边界：平台与内置工具代码位于 `dev-box`；独立扩展使用单独 Git 项目
 
 ## 0. 摘要与关键决策
 
@@ -18,7 +18,7 @@ DevBox 是本地优先、可扩展的桌面开发工具箱。JSON、Timestamp、
 
 1. 桌面容器采用 Tauri 2，界面采用 React + TypeScript，特权能力由 Rust Host 提供。
 2. JSON、Timestamp、Encoding、UUID/Hash 直接维护在 `dev-box`，不作为插件安装或更新。
-3. 当前不实现 Java 编辑器/Runner、SQL Formatter、JWT、正则测试和 HTTP Client。
+3. 平台不内置 Java 编辑器/Runner；Java 代码片段能力由独立 `devbox-java-runner` 插件提供，平台只提供受控 JShell Host API。SQL Formatter、JWT、正则测试和 HTTP Client 仍不实现。
 4. 不提供在线插件目录、在线安装或自动更新，只允许用户选择本地 ZIP 安装自定义插件。
 5. 允许安装未签名 ZIP，但安装前和安装后必须持续展示安全警告；不设置开发者模式开关。
 6. 所有插件包仍执行路径、大小、压缩比、结构、入口和兼容性检查；存在签名时继续验证签名。
@@ -34,6 +34,7 @@ DevBox 是本地优先、可扩展的桌面开发工具箱。JSON、Timestamp、
 - 提供统一、快速、键盘友好的本地开发工具入口。
 - 内置 JSON、时间戳、编码转换、UUID 与 SHA-2 摘要功能。
 - 支持从本地 ZIP 添加、启停、打开、回退和卸载自定义 UI 插件。
+- 为明确授权的插件提供受控 Java 代码片段执行能力，不提供完整 Java 工程编译。
 - 保存插件版本、来源、权限、签名状态和安装事件。
 - 默认不上传工具输入；内置工具全部在本地执行。
 - 在 Windows、macOS、Linux 上保持一致的数据模型和主要交互。
@@ -43,6 +44,7 @@ DevBox 是本地优先、可扩展的桌面开发工具箱。JSON、Timestamp、
 - 不做在线插件市场、目录、下载、自动更新、账户、付费、评论或云同步。
 - 不允许插件携带原生动态库、系统可执行文件、安装脚本或运行时依赖下载。
 - 不开放任意 Shell、任意文件系统或任意网络访问。
+- Java 片段通过固定参数的系统 JShell 执行；它不是操作系统级沙箱，必须显式授权并持续提示风险。
 - 不恢复上次打开的 Tab，也不在功能页放语言切换控件。
 
 ## 2. 总体架构
@@ -85,6 +87,7 @@ flowchart TB
 - Plugin SDK、IPC contracts、UI SDK 和 manifest 校验。
 - ZIP 解析、兼容性判断、可选签名验证、安装、升级、卸载、回退和恢复。
 - 插件附属 WebView、身份绑定、生命周期、权限网关和 SQLite 数据。
+- `java:execute` 的用户手势校验、输入/超时/输出/并发限制和 JShell 进程管理。
 
 推荐目录：
 
@@ -218,6 +221,8 @@ custom-plugin.zip
 - 插件导航只允许自身 `devbox-plugin://<plugin-id>/...` 资源。
 - 默认无文件、网络、进程和 Shell 权限。
 - settings 按 pluginId 隔离；剪贴板要求 manifest 授权和近期真实用户手势。
+- `java:execute` 要求 manifest 授权和近期真实用户手势；Host 固定 JShell 参数，限制 64 KiB 输入、5 秒超时、256 KiB 输出以及单插件单并发。
+- Java 代码以当前用户权限运行，可能访问本机文件、网络或其他进程；安装确认必须显示安全警告，不能将其表述为沙箱。
 - `ready` 超时、加载失败或异常可触发禁用/回退，不能拖垮 Shell。
 
 ## 8. 数据与安全

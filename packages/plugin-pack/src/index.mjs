@@ -18,6 +18,7 @@ export const packagePolicy = Object.freeze({
 const allowedPermissions = new Set([
   "clipboard:read",
   "clipboard:write",
+  "java:execute",
   "storage:read",
   "storage:write",
 ]);

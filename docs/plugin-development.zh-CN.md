@@ -53,7 +53,9 @@ ZIP 根目录必须直接包含 `plugin.json`，不能再套一层项目目录�
 }
 ```
 
-每个视图都必须配置分类、分类中英文标题、功能顺序和图标。可用图标为 `binary`、`box`、`braces`、`clock`、`code`、`fingerprint`、`plug`。可申请的权限仅为 `storage:read`、`storage:write`、`clipboard:read`、`clipboard:write`。
+每个视图都必须配置分类、分类中英文标题、功能顺序和图标。可用图标为 `binary`、`box`、`braces`、`clock`、`code`、`fingerprint`、`plug`。可申请的权限为 `storage:read`、`storage:write`、`clipboard:read`、`clipboard:write`、`java:execute`。
+
+`java:execute` 用于通过系统 JDK 17+ 的 JShell 执行 Java 代码片段。调用必须由一次近期真实用户操作触发；Host 限制单次输入为 64 KiB、最长 5 秒、输出最多 256 KiB，并且同一插件同时只能运行一个片段。该能力不是操作系统沙箱，代码仍以当前用户权限运行，可能访问本机文件、网络或启动其他进程。插件必须在运行前向用户说明风险，且不能把它描述为安全沙箱。
 
 ## 校验和打包
 
@@ -89,6 +91,7 @@ node packages/plugin-pack/src/cli.mjs verify ./my-plugin-1.0.0.zip \
 - 网络连接被插件 CSP 禁止。
 - 存储按插件 ID 隔离，并检查用户授权。
 - 剪贴板操作要求已授权权限；敏感写入还要求短时一次性用户手势令牌。
+- Java 片段执行要求 `java:execute` 授权和短时一次性用户手势令牌；插件只能提交代码和资源上限，不能指定 JShell 路径或命令行参数。
 - 不要依赖 `file://`、绝对路径、父目录路径、符号链接或远程脚本。
 
 包限制：ZIP 最大 25 MiB，展开后最大 50 MiB，单文件最大 8 MiB，最多 512 个文件，单文件压缩比不超过 100。

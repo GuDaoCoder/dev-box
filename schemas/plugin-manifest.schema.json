@@ -68,7 +68,13 @@
     "permissions": {
       "type": "array",
       "items": {
-        "enum": ["clipboard:read", "clipboard:write", "storage:read", "storage:write"]
+        "enum": [
+          "clipboard:read",
+          "clipboard:write",
+          "java:execute",
+          "storage:read",
+          "storage:write"
+        ]
       },
       "uniqueItems": true,
       "maxItems": 16

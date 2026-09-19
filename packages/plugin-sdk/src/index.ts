@@ -1,6 +1,12 @@
 import type { ComponentType } from "react";
 
-import type { CorePingResponse, JsonValue, SettingRecord } from "@devbox/ipc-contracts";
+import type {
+  CorePingResponse,
+  JavaExecutionRequest,
+  JavaExecutionResult,
+  JsonValue,
+  SettingRecord,
+} from "@devbox/ipc-contracts";
 
 export type SupportedLocale = "en-US" | "zh-CN";
 
@@ -80,7 +86,7 @@ export interface PluginManifest {
 }
 
 export type PluginPermission =
-  "clipboard:read" | "clipboard:write" | "storage:read" | "storage:write";
+  "clipboard:read" | "clipboard:write" | "java:execute" | "storage:read" | "storage:write";
 
 export interface CoreAPI {
   ping(): Promise<CorePingResponse>;
@@ -101,6 +107,9 @@ export interface PluginAPI {
   readonly core: CoreAPI;
   readonly settings: SettingsAPI;
   readonly clipboard: ClipboardAPI;
+  readonly java?: {
+    execute(request: JavaExecutionRequest): Promise<JavaExecutionResult>;
+  };
 }
 
 export interface InstalledPluginHostContext {
