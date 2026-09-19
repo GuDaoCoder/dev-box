@@ -6,6 +6,6 @@
   "STORAGE_ERROR": "DevBox could not save the setting.",
   "PLUGIN_PACKAGE_INVALID": "The plugin package is invalid or has been modified.",
   "PLUGIN_INCOMPATIBLE": "This plugin is incompatible with the current DevBox version.",
-  "NETWORK_ERROR": "DevBox could not reach the plugin catalog. Check the connection and try again.",
+  "NETWORK_ERROR": "The requested network operation failed. Check the connection and try again.",
   "INTERNAL": "An unexpected error occurred."
 }

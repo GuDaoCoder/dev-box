@@ -3,7 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   CORE_PLUGIN_ID,
   createEnvelope,
-  type CatalogResponse,
   type CorePingResponse,
   type InstalledPluginsResponse,
   type JsonValue,
@@ -117,17 +116,10 @@ export const pluginAdminAPI = {
       await invokeHost<InstalledPluginsResponse>("plugins_list", createEnvelope(CORE_PLUGIN_ID, {}))
     ).plugins;
   },
-  async preflightOffline(path: string, developerMode: boolean) {
+  async preflightOffline(path: string) {
     const response = await invokeHost<PreflightResponse>(
       "plugin_preflight_offline",
-      createEnvelope(CORE_PLUGIN_ID, { path, developerMode }),
-    );
-    return response.preflight;
-  },
-  async preflightOnline(packageUrl: string, expectedSha256: string) {
-    const response = await invokeHost<PreflightResponse>(
-      "plugin_preflight_online",
-      createEnvelope(CORE_PLUGIN_ID, { packageUrl, expectedSha256 }),
+      createEnvelope(CORE_PLUGIN_ID, { path }),
     );
     return response.preflight;
   },
@@ -185,17 +177,26 @@ export const pluginAdminAPI = {
     );
     return response.plugins;
   },
-  async fetchCatalog(url: string) {
-    const response = await invokeHost<CatalogResponse>(
-      "plugin_catalog_fetch",
-      createEnvelope(CORE_PLUGIN_ID, { url }),
-    );
-    return response.catalog;
-  },
-  async open(pluginId: string) {
+  async open(
+    pluginId: string,
+    viewId: string,
+    bounds: { x: number; y: number; width: number; height: number },
+  ) {
     return invokeHost<{ label: string }>(
       "plugin_open",
-      createEnvelope(CORE_PLUGIN_ID, { pluginId }),
+      createEnvelope(CORE_PLUGIN_ID, { pluginId, viewId, bounds }),
+    );
+  },
+  async setViewVisible(pluginId: string, viewId: string, visible: boolean) {
+    await invokeHost<void>(
+      "plugin_view_set_visible",
+      createEnvelope(CORE_PLUGIN_ID, { pluginId, viewId, visible }),
+    );
+  },
+  async closeView(pluginId: string, viewId: string) {
+    await invokeHost<void>(
+      "plugin_view_close",
+      createEnvelope(CORE_PLUGIN_ID, { pluginId, viewId }),
     );
   },
 };

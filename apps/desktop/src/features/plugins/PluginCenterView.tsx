@@ -1,30 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   BadgeCheck,
   CircleAlert,
-  Download,
   FolderOpen,
   PackageOpen,
   Play,
-  RefreshCw,
   RotateCcw,
+  ShieldAlert,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import type {
-  CatalogPlugin,
-  CatalogVersion,
-  InstallPreflight,
-  InstalledPlugin,
-} from "@devbox/ipc-contracts";
+import type { InstallPreflight, InstalledPlugin } from "@devbox/ipc-contracts";
 import { Badge, Button } from "@devbox/ui";
 
 import { pluginAdminAPI } from "../../ipc/client";
 
-type CenterTab = "installed" | "online" | "offline";
+type CenterTab = "installed" | "offline";
+
+export interface PluginCenterViewProps {
+  plugins: InstalledPlugin[];
+  onPluginsChange: (plugins: InstalledPlugin[]) => void;
+  onOpenPlugin: (plugin: InstalledPlugin) => void;
+}
 
 function errorMessage(error: unknown): string {
   if (error && typeof error === "object" && "details" in error) {
@@ -34,39 +34,17 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function newestVersion(plugin: CatalogPlugin): CatalogVersion | undefined {
-  return [...plugin.versions]
-    .filter((version) => !version.revoked)
-    .sort((left, right) =>
-      right.version.localeCompare(left.version, undefined, { numeric: true }),
-    )[0];
-}
-
-export function PluginCenterView() {
+export function PluginCenterView({
+  onOpenPlugin,
+  onPluginsChange,
+  plugins,
+}: PluginCenterViewProps) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<CenterTab>("installed");
-  const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
-  const [catalog, setCatalog] = useState<CatalogPlugin[]>([]);
-  const [catalogUrl, setCatalogUrl] = useState(
-    (import.meta.env.VITE_PLUGIN_CATALOG_URL as string | undefined) ?? "",
-  );
-  const [developerMode, setDeveloperMode] = useState(false);
   const [preflight, setPreflight] = useState<InstallPreflight>();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
   const [error, setError] = useState<string>();
-
-  const installedById = useMemo(
-    () => new Map(plugins.map((plugin) => [plugin.id, plugin])),
-    [plugins],
-  );
-
-  useEffect(() => {
-    void pluginAdminAPI
-      .list()
-      .then(setPlugins)
-      .catch((nextError: unknown) => setError(errorMessage(nextError)));
-  }, []);
 
   async function run(operation: () => Promise<void>) {
     setBusy(true);
@@ -82,11 +60,11 @@ export function PluginCenterView() {
   }
 
   function applyPlugins(next: InstalledPlugin[]) {
-    setPlugins(next);
+    onPluginsChange(next);
     setNotice(t("pluginCenter.messages.operationComplete"));
   }
 
-  async function chooseOfflinePackage() {
+  async function choosePackage() {
     if (!("__TAURI_INTERNALS__" in window)) {
       setError(t("pluginCenter.messages.desktopOnly"));
       return;
@@ -94,35 +72,17 @@ export function PluginCenterView() {
     const selected = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: "DevBox Plugin", extensions: ["devbox-plugin"] }],
+      filters: [{ name: "ZIP", extensions: ["zip"] }],
     });
     if (typeof selected !== "string") return;
-    setPreflight(await pluginAdminAPI.preflightOffline(selected, developerMode));
-  }
-
-  async function refreshCatalog() {
-    if (!catalogUrl.trim()) {
-      setError(t("pluginCenter.messages.catalogRequired"));
-      return;
-    }
-    const result = await pluginAdminAPI.fetchCatalog(catalogUrl.trim());
-    setCatalog(result.plugins);
-    setNotice(t("pluginCenter.messages.catalogUpdated"));
-  }
-
-  async function preflightOnline(version: CatalogVersion) {
-    setPreflight(await pluginAdminAPI.preflightOnline(version.packageUrl, version.packageSha256));
+    setPreflight(await pluginAdminAPI.preflightOffline(selected));
   }
 
   async function confirmInstall() {
     if (!preflight) return;
-    const permissions =
-      preflight.source === "development"
-        ? preflight.summary.manifest.permissions.filter((permission) =>
-            permission.startsWith("storage:"),
-          )
-        : preflight.summary.manifest.permissions;
-    applyPlugins(await pluginAdminAPI.confirm(preflight.token, permissions));
+    applyPlugins(
+      await pluginAdminAPI.confirm(preflight.token, preflight.summary.manifest.permissions),
+    );
     setPreflight(undefined);
     setTab("installed");
   }
@@ -153,7 +113,7 @@ export function PluginCenterView() {
       </header>
 
       <div aria-label={t("pluginCenter.title")} className="plugin-tabs" role="tablist">
-        {(["installed", "online", "offline"] as const).map((item) => (
+        {(["installed", "offline"] as const).map((item) => (
           <button
             aria-selected={tab === item}
             className={tab === item ? "active" : ""}
@@ -162,7 +122,7 @@ export function PluginCenterView() {
             role="tab"
             type="button"
           >
-            {t("pluginCenter.tabs." + item)}
+            {t(`pluginCenter.tabs.${item}`)}
             {item === "installed" ? <span>{plugins.length}</span> : null}
           </button>
         ))}
@@ -199,19 +159,23 @@ export function PluginCenterView() {
                           : "pluginCenter.status.disabled",
                       )}
                     </Badge>
+                    {plugin.signatureStatus !== "verified" ? (
+                      <Badge tone="danger">
+                        <ShieldAlert aria-hidden="true" size={13} />
+                        {t("pluginCenter.signature.unsigned")}
+                      </Badge>
+                    ) : null}
                   </div>
                   <p>{plugin.manifest.description || plugin.id}</p>
                   <small>
                     {plugin.publisherId} · v{plugin.currentVersion} ·{" "}
-                    {t("pluginCenter.sources." + plugin.source)}
+                    {t(`pluginCenter.sources.${plugin.source}`)}
                   </small>
                 </div>
                 <div className="plugin-actions">
                   <Button
-                    disabled={busy || !plugin.enabled}
-                    onClick={() =>
-                      void run(async () => void (await pluginAdminAPI.open(plugin.id)))
-                    }
+                    disabled={busy || !plugin.enabled || !plugin.manifest.contributes.views.length}
+                    onClick={() => onOpenPlugin(plugin)}
                   >
                     <Play aria-hidden="true" size={15} />
                     {t("pluginCenter.actions.open")}
@@ -262,84 +226,16 @@ export function PluginCenterView() {
         </section>
       ) : null}
 
-      {tab === "online" ? (
-        <section className="online-catalog">
-          <div className="catalog-toolbar surface-card">
-            <label className="field-label" htmlFor="catalog-url">
-              {t("pluginCenter.catalog.url")}
-            </label>
-            <div className="catalog-input-row">
-              <input
-                className="text-input"
-                id="catalog-url"
-                onChange={(event) => setCatalogUrl(event.currentTarget.value)}
-                placeholder="https://…/catalog.json"
-                value={catalogUrl}
-              />
-              <Button disabled={busy} onClick={() => void run(refreshCatalog)} variant="primary">
-                <RefreshCw aria-hidden="true" size={15} />
-                {t("pluginCenter.actions.refresh")}
-              </Button>
-            </div>
-            <p>{t("pluginCenter.catalog.officialOnly")}</p>
-          </div>
-          <div className="plugin-list">
-            {catalog.map((plugin) => {
-              const version = newestVersion(plugin);
-              const installed = installedById.get(plugin.id);
-              const current = installed?.currentVersion === version?.version;
-              return (
-                <article className="plugin-row" key={plugin.id}>
-                  <div className="plugin-icon">
-                    <Download aria-hidden="true" />
-                  </div>
-                  <div className="plugin-row-copy">
-                    <div className="plugin-title-line">
-                      <h2>{plugin.name}</h2>
-                      <Badge tone="success">{plugin.publisher}</Badge>
-                    </div>
-                    <p>{plugin.description}</p>
-                    <small>
-                      {version ? "v" + version.version + " · " + version.releasedAt : "—"}
-                    </small>
-                  </div>
-                  <Button
-                    disabled={busy || !version || current}
-                    onClick={() => (version ? void run(() => preflightOnline(version)) : undefined)}
-                    variant="primary"
-                  >
-                    {t(
-                      current
-                        ? "pluginCenter.status.installed"
-                        : installed
-                          ? "pluginCenter.actions.update"
-                          : "pluginCenter.actions.install",
-                    )}
-                  </Button>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
       {tab === "offline" ? (
         <section className="offline-panel surface-card">
           <FolderOpen aria-hidden="true" className="offline-icon" />
           <h2>{t("pluginCenter.offline.title")}</h2>
           <p>{t("pluginCenter.offline.description")}</p>
-          <label className="developer-toggle">
-            <input
-              checked={developerMode}
-              onChange={(event) => setDeveloperMode(event.currentTarget.checked)}
-              type="checkbox"
-            />
-            <span>
-              <strong>{t("pluginCenter.offline.developerMode")}</strong>
-              <small>{t("pluginCenter.offline.developerWarning")}</small>
-            </span>
-          </label>
-          <Button disabled={busy} onClick={() => void run(chooseOfflinePackage)} variant="primary">
+          <div className="plugin-warning">
+            <ShieldAlert aria-hidden="true" size={20} />
+            <span>{t("pluginCenter.offline.unsignedWarning")}</span>
+          </div>
+          <Button disabled={busy} onClick={() => void run(choosePackage)} variant="primary">
             <FolderOpen aria-hidden="true" size={16} />
             {t("pluginCenter.actions.choosePackage")}
           </Button>
@@ -355,7 +251,11 @@ export function PluginCenterView() {
             role="dialog"
           >
             <div className="confirmation-heading">
-              <ShieldCheck aria-hidden="true" />
+              {preflight.summary.signatureStatus === "verified" ? (
+                <ShieldCheck aria-hidden="true" />
+              ) : (
+                <ShieldAlert aria-hidden="true" />
+              )}
               <div>
                 <h2>{t("pluginCenter.confirm.title")}</h2>
                 <p>
@@ -363,10 +263,16 @@ export function PluginCenterView() {
                 </p>
               </div>
             </div>
+            {preflight.summary.signatureStatus !== "verified" ? (
+              <div className="plugin-warning danger">
+                <ShieldAlert aria-hidden="true" size={20} />
+                <span>{t("pluginCenter.offline.unsignedWarning")}</span>
+              </div>
+            ) : null}
             <dl className="confirmation-details">
               <div>
                 <dt>{t("pluginCenter.confirm.source")}</dt>
-                <dd>{t("pluginCenter.sources." + preflight.source)}</dd>
+                <dd>{t(`pluginCenter.sources.${preflight.source}`)}</dd>
               </div>
               <div>
                 <dt>{t("pluginCenter.confirm.publisher")}</dt>
@@ -374,7 +280,7 @@ export function PluginCenterView() {
               </div>
               <div>
                 <dt>{t("pluginCenter.confirm.signature")}</dt>
-                <dd>{t("pluginCenter.signature." + preflight.summary.signatureStatus)}</dd>
+                <dd>{t(`pluginCenter.signature.${preflight.summary.signatureStatus}`)}</dd>
               </div>
               <div>
                 <dt>SHA-256</dt>

@@ -83,16 +83,6 @@ impl DevBoxError {
         }
     }
 
-    pub fn network(correlation_id: &str, reason: impl Into<String>) -> Self {
-        Self {
-            code: "NETWORK_ERROR",
-            message_key: "errors:NETWORK_ERROR",
-            details: Some(json!({ "reason": reason.into() })),
-            correlation_id: correlation_id.to_owned(),
-            retryable: true,
-        }
-    }
-
     pub fn internal(correlation_id: &str, reason: impl Into<String>) -> Self {
         Self {
             code: "INTERNAL",

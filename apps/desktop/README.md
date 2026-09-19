@@ -11,4 +11,4 @@ pnpm tauri dev
 pnpm check
 ```
 
-The desktop now includes the M1 shell and the M2 Plugin Center. M2 adds signed online/offline package preflight, atomic installation and rollback, SQLite-backed plugin state, and isolated plugin WebView windows without Tauri IPC permissions.
+The desktop includes the application shell, four built-in tools, a multi-tab workspace, and local ZIP plugin management. Custom plugins use atomic installation and rollback, SQLite-backed state, and isolated child WebViews without direct Tauri IPC permissions. Unsigned ZIP files are allowed only after a visible security warning.

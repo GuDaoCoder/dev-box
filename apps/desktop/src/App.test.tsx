@@ -1,17 +1,46 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import App from "./App";
+import i18n from "./i18n";
+import { useAppStore } from "./stores/app-store";
 
 describe("App", () => {
-  it("激活内置插件并显示统一的应用壳层", async () => {
+  beforeEach(async () => {
+    useAppStore.setState({
+      activeTabId: "tool.json",
+      locale: "en-US",
+      paletteOpen: false,
+      tabs: ["tool.json"],
+      theme: "dark",
+    });
+    await i18n.changeLanguage("en-US");
+  });
+
+  it("显示内置工具和二级功能树", async () => {
     render(<App />);
 
     expect(screen.getByText("DevBox")).toBeVisible();
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "The foundation is connected." })).toBeVisible(),
+    expect(await screen.findByRole("heading", { name: "JSON Tool" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Data" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Timestamp Tool" })).toBeVisible();
+    expect(screen.getByText("0 custom plugins")).toBeVisible();
+  });
+
+  it("同一功能只打开一个可关闭的工作区标签", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
+    fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
+
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.getByRole("tab", { name: "Timestamp Tool" })).toHaveAttribute(
+      "aria-selected",
+      "true",
     );
-    expect(screen.getByText("1 plugin active")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Close Timestamp Tool" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(1);
   });
 
   it("使用快捷键打开命令面板", async () => {
@@ -22,13 +51,15 @@ describe("App", () => {
     expect(await screen.findByRole("dialog", { name: "Command palette" })).toBeVisible();
   });
 
-  it("打开插件中心并显示在线与离线入口", async () => {
+  it("插件中心只提供本地 ZIP 安装入口", async () => {
     render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Plugin Center" }));
+    fireEvent.click(screen.getByRole("button", { name: "Plugin Manager" }));
 
-    expect(await screen.findByRole("heading", { name: "Plugin Center" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: /Online/ })).toBeVisible();
-    expect(screen.getByRole("tab", { name: /Offline Install/ })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Plugin Manager" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: /Add ZIP Plugin/ })).toBeVisible();
+    expect(screen.queryByRole("tab", { name: /Online/ })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("tab", { name: /Installed/ })).toBeVisible());
   });
 });

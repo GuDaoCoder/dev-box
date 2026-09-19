@@ -1,117 +1,79 @@
 # DevBox 开发里程碑状态
 
+> 更新日期：2026-09-19
+
 ## M0：工程基线
 
 状态：**已完成，已验收**
 
-完成任务：
-
-- [x] E0-01：pnpm workspace 与根脚本
-- [x] E0-02：Tauri 2 + React + TypeScript + Vite 桌面应用
-- [x] E0-03：Rust workspace、rustfmt 与 clippy
-- [x] E0-04：共享 TypeScript、ESLint 与 Prettier 配置
-- [x] E0-05：Vitest、React Testing Library 与 Rust test 基线
-- [x] E0-06：Playwright 启动 smoke test
-- [x] E0-07：Windows/macOS/Linux CI build matrix
-- [x] E0-08：版本同步、Changelog 与产物命名规则
-
-本地验证：
-
-- `pnpm check`：通过
-- `pnpm build`：通过
-- `cargo fmt --all --check`：通过
-- `cargo clippy --workspace --all-targets --all-features -- -D warnings`：通过
-- `cargo test --workspace`：通过
-- `pnpm test:e2e`：通过
-- `pnpm tauri build --no-bundle`：通过（macOS arm64）
-
-说明：Windows 与 Linux 构建步骤已配置在 GitHub Actions matrix 中；需要仓库推送到 GitHub 后才能取得对应平台的实际运行结果。
+- [x] pnpm workspace、Tauri 2、React、TypeScript、Vite 和 Rust workspace
+- [x] ESLint、Prettier、Vitest、Rust test、Playwright 和 CI matrix
+- [x] 版本同步、Changelog 与产物命名
 
 ## M1：Shell 与平台骨架
 
 状态：**已完成，已验收**
 
-完成任务：
-
-- [x] 建立语义色、深浅主题和 Button、Kbd、Badge 等公共 UI 基线
-- [x] 实现顶栏、活动栏、导航栏、主工作区、状态栏和响应式降级
-- [x] 实现命令面板及 `Ctrl/Cmd + K` 快捷键
-- [x] 集成 `i18next + react-i18next`，支持系统语言、简体中文和英文
-- [x] 增加中英文翻译键一致性检查
-- [x] 实现语言和主题即时切换，并通过 Settings API 持久化
-- [x] 建立版本化 IPC contracts、Plugin SDK 和 `DisposableStore`
-- [x] 实现静态内置插件注册表生成、Plugin Manager 生命周期和插件错误隔离
-- [x] 实现 Rust Command Gateway、版本/调用者/参数校验和结构化错误
-- [x] 集成 SQLite migration、Settings Repository 和 revision 冲突检测
-- [x] 建立 Foundation 内置验收插件，验证激活、受控 command 和设置保存闭环
-
-本地验证：
-
-- `pnpm check`：通过（TypeScript、ESLint、Prettier、Vitest、插件注册表）
-- `pnpm build`：通过
-- `cargo fmt --all --check`：通过
-- `cargo clippy --workspace --all-targets --all-features -- -D warnings`：通过
-- `cargo test --workspace`：通过（Gateway、参数校验、Repository、revision）
-- `pnpm test:e2e`：通过（Shell 启动、插件页面、命令面板）
-- `pnpm tauri build --no-bundle`：通过（macOS arm64）
-
-验收入口：启动桌面应用后，在“平台基线”页面检查 Host、保存显示名称，再进入“设置”切换语言和主题。
-
-## 路线调整（2026-09-17）
-
-本次调整已经写入架构、界面规范和开发任务，后续里程碑以插件平台能力优先：
-
-- `dev-box` 只负责桌面平台、Plugin SDK、安装器、权限与隔离、插件中心。
-- 具体工具迁移到独立 Git 项目 `devbox-tools`，独立开发、测试、版本和发布。
-- 首批只交付 JSON、时间戳、编码转换、UUID/Hash 四个常见通用工具。
-- 在线与离线安装统一使用签名的 `.devbox-plugin` 包和同一套校验、安装、回滚流程。
-- 在线目录首阶段仅收录官方插件；离线未签名包只能在用户显式开启开发者模式后安装。
-- Java 编辑器、SQL Formatter、JWT、正则测试和 HTTP Client 不进入当前开发路线。
+- [x] 语义色、深浅主题、公共 UI、Shell 和命令面板
+- [x] `zh-CN` / `en-US` 国际化与设置持久化
+- [x] Plugin SDK、版本化 IPC、Command Gateway 和结构化错误
+- [x] SQLite migration、Settings Repository 和 revision 冲突检测
 
 ## M2：插件分发基础
 
 状态：**已完成，已验收**
 
-完成任务：
+- [x] Plugin API 1.0、manifest、包解析、checksum 和 Ed25519 验证
+- [x] 安全解包、兼容性检查、staging、原子安装和启动恢复
+- [x] 启用、禁用、回退、运行时失败恢复和卸载
+- [x] SQLite 插件、版本、权限和安装事件
+- [x] 隔离 WebView、Host 身份绑定、scoped settings 和剪贴板网关
 
-- [x] 冻结 Plugin API 1.0 最小面、manifest schema 和 `.devbox-plugin` 包格式。
-- [x] 实现可重复打包的 `plugin-pack` CLI、SHA-256 完整性校验和 Ed25519 签名验证。
-- [x] 实现归档限制、路径越界防护、兼容性检查、staging、原子安装和启动恢复。
-- [x] 实现启用、禁用、在线/离线更新、手动回退、运行时失败自动回退和卸载。
-- [x] 使用 SQLite 保存发布者、插件、版本、权限授权和安装事件。
-- [x] 使用独立 WebView、最小 capability 和 CSP 隔离运行时插件。
-- [x] 实现 Host 绑定的插件身份、ready/失败握手、scoped settings 和需用户手势的剪贴板网关。
-- [x] 实现 Installed / Online / Offline 插件中心，中英文安全预检与确认。
-- [x] 生成 1.0.0 / 1.1.0 签名 fixture、本地 Catalog 和统一 Installer 生命周期测试。
+说明：M2 验收时实现过在线目录与专用包扩展名；产品路线已在 M3 调整为仅本地 ZIP，安全安装和运行时基础继续复用。
 
-本地验证：
+## 路线调整（2026-09-18）
 
-- `pnpm check`：通过
-- `pnpm build`：通过
-- `pnpm fixtures:m2` 与两个 fixture 验签：通过
-- `cargo fmt --all --check`：通过
-- `cargo clippy --workspace --all-targets --all-features --offline -- -D warnings`：通过
-- `cargo test --workspace --offline`：通过（12 个 Rust 测试）
-- `pnpm test:e2e`：通过（2 个 Chromium 测试）
-- `pnpm tauri build --no-bundle`：通过（macOS arm64）
-- `pnpm sdk:pack`：4 个公开包均可生成 tarball
+- JSON、Timestamp、Encoding、UUID/Hash 改为 `dev-box` 平台内置功能。
+- 四个工具从 `devbox-tools` 迁回，完成验证后删除旧项目。
+- 插件仅支持用户添加本地 ZIP，不提供在线安装或目录。
+- 允许未签名 ZIP；无开发者模式，但安装前后必须持续警告。
+- 左侧改为分类/功能二级树，移除工具/插件活动栏切换按钮。
+- 功能统一以多 Tab 打开；同功能单例、支持关闭和拖动排序，重启不恢复。
+- 插件在主窗口附属 WebView 中运行，不创建独立功能窗口。
+- 语言切换只放在设置页，支持中文和英文。
 
-退出条件：官方签名的示例插件可通过在线目录和离线文件两种入口安装；篡改包、未知签名、越界文件和不兼容版本会被稳定拒绝；升级失败可恢复到上一版本。
+## M3：工作区与内置工具重构
 
-## M3：官方通用工具
+状态：**开发完成，待用户验收**
 
-状态：**进行中**
+已完成：
 
-下一阶段范围：建立独立 `devbox-tools` 仓库，开发 JSON、时间戳、编码转换、UUID/Hash 四个插件，并生成可供 M2 平台安装的签名包和在线目录索引。
+- [x] 建立内置功能分类和注册表
+- [x] 左侧改为分类/功能二级树
+- [x] 建立仅内存的多 Tab 工作区、单例打开、关闭和拖放排序
+- [x] JSON、Timestamp、Encoding、UUID/Hash 迁入平台并接入中英文
+- [x] 删除插件在线目录和在线安装 UI/API
+- [x] 文件选择器与 Host 只接受 `.zip`
+- [x] 允许未签名 ZIP，并在安装确认和列表中展示警告
+- [x] 插件 manifest 视图增加分类、图标和顺序
+- [x] 插件从独立窗口改为工作区 child WebView
 
-## M4：插件中心完整体验
+验证与收口：
+
+- [x] 完成前端组件、Tab、工具算法和 Rust 安装回归
+- [x] 更新 fixture、README、设计说明和开发任务
+- [x] 通过完整 lint、类型、单测、构建、clippy 和 E2E
+- [x] 确认迁移完整后将 `devbox-tools` 移入废纸篓
+- [x] 提交代码并进入用户验收
+
+旧项目恢复位置：`/Users/zane.zou/.Trash/devbox-tools-20260919`。
+
+## M4：稳定性与发布
 
 状态：**待开始**
 
-下一阶段范围：已安装、在线、离线安装、更新四个页面，以及来源、签名、权限、进度、失败恢复和中英文状态反馈。
-
-## M5：稳定性与发布
-
-状态：**待开始**
-
-下一阶段范围：跨平台端到端测试、安全回归、安装恢复、性能与无障碍检查，以及平台和官方插件的独立发布流程。
+- [ ] Windows、macOS、Linux 安装与升级验证
+- [ ] ZIP 解析、IPC 越权、CSP 与身份绑定安全回归
+- [ ] 性能、键盘、焦点、对比度和读屏检查
+- [ ] 用户安装说明、插件 ZIP 制作说明和安全说明
+- [ ] 三平台发布产物与最终检查表

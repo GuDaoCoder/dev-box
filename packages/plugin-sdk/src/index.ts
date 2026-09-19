@@ -37,8 +37,13 @@ export class DisposableStore implements Disposable {
 export interface ViewContribution {
   id: string;
   titleKey: string;
-  icon: "box" | "braces" | "clock" | "code" | "fingerprint" | "plug";
+  icon: "binary" | "box" | "braces" | "clock" | "code" | "fingerprint" | "plug";
   order: number;
+  category: {
+    id: string;
+    title: Record<SupportedLocale, string>;
+    order: number;
+  };
 }
 
 export interface CommandContribution {
@@ -55,7 +60,7 @@ export interface PluginManifest {
   publisher: {
     id: string;
     name: string;
-    keyId: string;
+    keyId?: string;
   };
   engines: {
     devbox: string;

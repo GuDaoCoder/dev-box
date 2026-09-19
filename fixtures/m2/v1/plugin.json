@@ -29,7 +29,12 @@
         "id": "fixture",
         "titleKey": "fixture.title",
         "icon": "plug",
-        "order": 10
+        "order": 10,
+        "category": {
+          "id": "examples",
+          "title": { "zh-CN": "示例", "en-US": "Examples" },
+          "order": 70
+        }
       }
     ]
   }

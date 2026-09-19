@@ -1,45 +1,103 @@
 {
-  "app": {
-    "name": "DevBox",
-    "tagline": "Local developer toolbox"
-  },
+  "app": { "name": "DevBox", "tagline": "Local developer toolbox" },
   "navigation": {
-    "tools": "Tools",
     "pluginCenter": "Plugin Center",
-    "settings": "Settings"
+    "settings": "Settings",
+    "expand": "Expand {{name}}",
+    "collapse": "Collapse {{name}}"
+  },
+  "categories": {
+    "data": "Data",
+    "conversion": "Time & Encoding",
+    "identity": "Identity & Digests",
+    "plugins": "Plugins",
+    "system": "System"
   },
   "actions": {
-    "search": "Search tools and commands",
+    "search": "Search features and commands",
     "openPalette": "Open command palette",
-    "close": "Close"
+    "close": "Close",
+    "clear": "Clear",
+    "copy": "Copy",
+    "convert": "Convert",
+    "swap": "Swap"
   },
   "status": {
     "ready": "Ready",
-    "plugins": "{{count}} plugin active",
-    "milestone": "M2 · Plugin distribution"
+    "plugins": "{{count}} custom plugins",
+    "milestone": "Built-in tools · Local plugins"
   },
-  "errors": {
-    "pluginRender": "This plugin cannot be displayed. Restart DevBox and try again."
-  },
+  "errors": { "pluginRender": "This feature cannot be displayed. Restart DevBox and try again." },
   "palette": {
     "title": "Command palette",
     "placeholder": "Type a command or page name…",
     "empty": "No matching command"
   },
-  "pluginCenter": {
-    "eyebrow": "PLUGIN DISTRIBUTION",
-    "title": "Plugin Center",
-    "description": "Manage online and offline plugins through one signed installation pipeline.",
-    "sidebar": "Install, enable, roll back, and remove plugins. Every source uses the same security checks.",
-    "tabs": {
-      "installed": "Installed",
-      "online": "Online",
-      "offline": "Offline Install"
+  "workspace": {
+    "emptyTitle": "No feature is open",
+    "emptyDescription": "Choose a feature from the tree on the left.",
+    "closeTab": "Close {{name}}",
+    "pluginLoading": "Loading plugin view…",
+    "pluginBrowserOnly": "Plugin views are available only in the DevBox desktop app."
+  },
+  "tools": {
+    "common": { "input": "Input", "output": "Result" },
+    "json": {
+      "title": "JSON Tool",
+      "description": "Format, compact, validate, and recursively sort JSON object keys locally.",
+      "format": "Format",
+      "compact": "Compact",
+      "sort": "Sort keys",
+      "wrap": "Wrap lines",
+      "empty": "Enter JSON to begin",
+      "tooLarge": "Input exceeds the 2 MiB limit",
+      "valid": "Valid JSON",
+      "invalid": "Invalid JSON at line {{line}}, column {{column}}"
     },
+    "timestamp": {
+      "title": "Timestamp Tool",
+      "description": "Convert Unix timestamps, dates, and common time zones.",
+      "input": "Timestamp or date",
+      "timezone": "Target time zone",
+      "now": "Use current time",
+      "seconds": "Seconds",
+      "milliseconds": "Milliseconds",
+      "local": "Local time",
+      "zoned": "Target zone",
+      "invalid": "Enter a valid timestamp or date"
+    },
+    "encoding": {
+      "title": "Encoding Tool",
+      "description": "Encode and decode Base64, URL, and UTF-8 hexadecimal text locally.",
+      "encode": "Encode",
+      "decode": "Decode",
+      "invalid": "The input cannot be transformed with these settings"
+    },
+    "uuid": {
+      "title": "UUID & Hash",
+      "description": "Generate UUID v4 values in batches and calculate SHA-2 digests locally.",
+      "hash": "Hash",
+      "count": "Count (1–1000)",
+      "generate": "Generate",
+      "input": "Text to hash",
+      "algorithm": "Algorithm",
+      "outputEncoding": "Output encoding",
+      "calculate": "Calculate",
+      "invalidCount": "Count must be an integer from 1 to 1000",
+      "characters": "characters",
+      "bytes": "bytes",
+      "digestNote": "A digest is not encryption and cannot recover the input"
+    }
+  },
+  "pluginCenter": {
+    "eyebrow": "CUSTOM PLUGINS",
+    "title": "Plugin Manager",
+    "description": "Install, enable, update, and remove custom plugins from local ZIP archives.",
+    "sidebar": "All plugins come from local ZIP files. Unsigned plugins retain a visible security warning.",
+    "tabs": { "installed": "Installed", "offline": "Add ZIP Plugin" },
     "actions": {
-      "installFromFile": "Install from file",
-      "choosePackage": "Choose .devbox-plugin",
-      "refresh": "Refresh catalog",
+      "installFromFile": "Add ZIP Plugin",
+      "choosePackage": "Choose ZIP archive",
       "install": "Install",
       "update": "Update",
       "cancel": "Cancel",
@@ -49,29 +107,17 @@
       "rollback": "Roll back",
       "uninstall": "Uninstall"
     },
-    "status": {
-      "enabled": "Enabled",
-      "disabled": "Disabled",
-      "installed": "Installed"
-    },
-    "sources": {
-      "online": "Official online catalog",
-      "offline": "Local file",
-      "development": "Developer mode"
-    },
+    "status": { "enabled": "Enabled", "disabled": "Disabled", "installed": "Installed" },
+    "sources": { "offline": "Local ZIP file", "development": "Local ZIP file" },
     "signature": {
       "verified": "Signature verified",
-      "unsigned-development": "Unverified (developer mode)"
-    },
-    "catalog": {
-      "url": "Official catalog URL",
-      "officialOnly": "This release only accepts online plugins signed by a trusted publisher configured in DevBox."
+      "unsigned": "Unsigned",
+      "unsigned-development": "Unsigned"
     },
     "offline": {
-      "title": "Install from a local file",
-      "description": "DevBox copies the package into isolated staging before checking integrity, signature, and compatibility.",
-      "developerMode": "Allow untrusted development packages",
-      "developerWarning": "For local development only. This mode grants no additional file, network, or process access."
+      "title": "Add a custom plugin",
+      "description": "Choose a ZIP archive containing plugin.json. DevBox checks paths, limits, structure, and compatibility.",
+      "unsignedWarning": "An unsigned plugin's publisher and content integrity cannot be verified. Install ZIP files only from sources you trust."
     },
     "confirm": {
       "title": "Confirm plugin installation",
@@ -87,12 +133,10 @@
     },
     "empty": {
       "installedTitle": "No plugins installed",
-      "installedDescription": "Install from the official online catalog or a local .devbox-plugin file."
+      "installedDescription": "Add a custom plugin from a local ZIP archive."
     },
     "messages": {
-      "desktopOnly": "Offline file selection is available in the DevBox desktop app.",
-      "catalogRequired": "Enter a plugin catalog URL first.",
-      "catalogUpdated": "Plugin catalog updated.",
+      "desktopOnly": "File selection is available in the DevBox desktop app.",
       "operationComplete": "Plugin state updated."
     }
   }

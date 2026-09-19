@@ -18,7 +18,19 @@ const testPlugin: DevBoxPlugin = {
     permissions: [],
     locales: {},
     contributes: {
-      views: [{ id: "test", titleKey: "test:title", icon: "box", order: 1 }],
+      views: [
+        {
+          id: "test",
+          titleKey: "test:title",
+          icon: "box",
+          order: 1,
+          category: {
+            id: "test",
+            title: { "zh-CN": "测试", "en-US": "Test" },
+            order: 1,
+          },
+        },
+      ],
       commands: [{ id: "test.run", titleKey: "test:run" }],
     },
   },

@@ -113,7 +113,6 @@ impl VerifiedPackage {
 pub fn inspect_package(
     path: &Path,
     publisher: Option<&TrustedPublisher>,
-    developer_mode: bool,
     policy: &PackagePolicy,
 ) -> Result<VerifiedPackage, String> {
     let archive_bytes = std::fs::read(path).map_err(|error| error.to_string())?;
@@ -165,27 +164,33 @@ pub fn inspect_package(
     if !files.contains_key(&manifest.entry.main) {
         return Err("插件入口文件不存在".to_owned());
     }
-
-    let checksum_bytes = files
-        .get("checksums.json")
-        .ok_or_else(|| "插件包缺少 checksums.json".to_owned())?;
-    let checksums: ChecksumDocument =
-        serde_json::from_slice(checksum_bytes).map_err(|_| "checksums.json 无效".to_owned())?;
-    if checksums.algorithm != "SHA-256" {
-        return Err("插件包 checksum 算法不受支持".to_owned());
+    for locale_path in manifest.locales.values() {
+        if !files.contains_key(locale_path) {
+            return Err(format!("插件语言资源不存在：{locale_path}"));
+        }
     }
-    verify_checksums(&files, &checksums)?;
 
-    let signature_status = match (files.get("signature.json"), publisher) {
-        (Some(signature_bytes), Some(publisher)) => {
+    let signature_status = match (files.get("checksums.json"), files.get("signature.json")) {
+        (Some(checksum_bytes), Some(signature_bytes)) => {
+            let checksums: ChecksumDocument = serde_json::from_slice(checksum_bytes)
+                .map_err(|_| "checksums.json 无效".to_owned())?;
+            if checksums.algorithm != "SHA-256" {
+                return Err("插件包 checksum 算法不受支持".to_owned());
+            }
+            verify_checksums(&files, &checksums)?;
+            let Some(publisher) = publisher else {
+                return Ok(VerifiedPackage {
+                    manifest,
+                    archive_sha256,
+                    signature_status: "unsigned-development".to_owned(),
+                    files,
+                });
+            };
             verify_package_signature(signature_bytes, checksum_bytes, &manifest, publisher)?;
             "verified"
         }
-        (Some(_), None) | (None, None) if developer_mode => "unsigned-development",
-        (None, Some(_)) if developer_mode => "unsigned-development",
-        (Some(_), None) => return Err("插件发布者不受信任".to_owned()),
-        (None, Some(_)) => return Err("插件包缺少 signature.json".to_owned()),
-        (None, None) => return Err("插件包缺少 signature.json".to_owned()),
+        (None, None) => "unsigned-development",
+        _ => return Err("插件签名文件不完整".to_owned()),
     };
 
     Ok(VerifiedPackage {
@@ -272,7 +277,7 @@ fn verify_package_signature(
     let document: SignatureDocument =
         serde_json::from_slice(signature_bytes).map_err(|_| "signature.json 无效".to_owned())?;
     if document.algorithm != "Ed25519"
-        || document.key_id != manifest.publisher.key_id
+        || manifest.publisher.key_id.as_deref() != Some(document.key_id.as_str())
         || document.key_id != publisher.key_id
     {
         return Err("插件签名身份不匹配".to_owned());
@@ -306,6 +311,52 @@ pub(crate) mod tests {
 
     pub(crate) fn write_test_package(path: &Path, version: &str) {
         write_test_package_with_engine(path, version, ">=0.1.0, <0.2.0");
+    }
+
+    pub(crate) fn write_unsigned_test_package(path: &Path) {
+        let manifest = json!({
+            "schemaVersion": 1,
+            "id": "devbox.unsigned-fixture",
+            "name": "Unsigned Fixture",
+            "description": "用于验证未签名 ZIP 安装",
+            "version": "1.0.0",
+            "publisher": {
+                "id": "local-author",
+                "name": "Local Author"
+            },
+            "engines": { "devbox": ">=0.1.0, <0.2.0", "pluginApi": "^1.0.0" },
+            "type": "ui",
+            "entry": { "main": "dist/index.html" },
+            "activationEvents": ["onView:fixture"],
+            "permissions": [],
+            "locales": {},
+            "contributes": {
+                "views": [{
+                    "id": "fixture",
+                    "titleKey": "fixture.title",
+                    "icon": "plug",
+                    "order": 10,
+                    "category": {
+                        "id": "examples",
+                        "title": { "zh-CN": "示例", "en-US": "Examples" },
+                        "order": 70
+                    }
+                }]
+            }
+        });
+        let manifest_bytes = serde_json::to_vec(&manifest).expect("应序列化清单");
+        let html_bytes = b"<!doctype html><title>unsigned fixture</title>";
+        let archive_file = File::create(path).expect("应创建未签名测试包");
+        let mut archive = ZipWriter::new(archive_file);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        for (name, content) in [
+            ("dist/index.html", html_bytes.as_slice()),
+            ("plugin.json", manifest_bytes.as_slice()),
+        ] {
+            archive.start_file(name, options).expect("应写入文件头");
+            archive.write_all(content).expect("应写入文件");
+        }
+        archive.finish().expect("应完成未签名测试包");
     }
 
     fn write_test_package_with_engine(path: &Path, version: &str, devbox_engine: &str) {
@@ -392,7 +443,7 @@ pub(crate) mod tests {
     #[test]
     fn 验证由打包规范生成的签名包() {
         let archive_path =
-            std::env::temp_dir().join(format!("devbox-plugin-{}.devbox-plugin", Uuid::new_v4()));
+            std::env::temp_dir().join(format!("devbox-plugin-{}.zip", Uuid::new_v4()));
         write_test_package(&archive_path, "1.0.0");
 
         let publisher = TrustedPublisher {
@@ -402,25 +453,34 @@ pub(crate) mod tests {
             public_key_pem: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEABANbfxJp4V1Zm1tpGz3nNQeghxYeqcpi8Je0s2VUSRo=\n-----END PUBLIC KEY-----\n".to_owned(),
             revoked: false,
         };
-        let verified = inspect_package(
-            &archive_path,
-            Some(&publisher),
-            false,
-            &PackagePolicy::default(),
-        )
-        .expect("签名包应通过验证");
+        let verified = inspect_package(&archive_path, Some(&publisher), &PackagePolicy::default())
+            .expect("签名包应通过验证");
         assert_eq!(verified.manifest.id, "devbox.fixture");
         assert_eq!(verified.signature_status, "verified");
-        assert!(inspect_package(&archive_path, None, false, &PackagePolicy::default()).is_err());
+        let untrusted = inspect_package(&archive_path, None, &PackagePolicy::default())
+            .expect("不受信任的签名包应作为未签名包处理");
+        assert_eq!(untrusted.signature_status, "unsigned-development");
+        let _ = std::fs::remove_file(archive_path);
+    }
+
+    #[test]
+    fn 允许安装无签名文件的本地_zip() {
+        let archive_path =
+            std::env::temp_dir().join(format!("devbox-unsigned-{}.zip", Uuid::new_v4()));
+        write_unsigned_test_package(&archive_path);
+
+        let inspected = inspect_package(&archive_path, None, &PackagePolicy::default())
+            .expect("未签名 ZIP 应通过结构与安全检查");
+
+        assert_eq!(inspected.manifest.id, "devbox.unsigned-fixture");
+        assert_eq!(inspected.signature_status, "unsigned-development");
         let _ = std::fs::remove_file(archive_path);
     }
 
     #[test]
     fn 拒绝不兼容的插件版本() {
-        let archive_path = std::env::temp_dir().join(format!(
-            "devbox-incompatible-{}.devbox-plugin",
-            Uuid::new_v4()
-        ));
+        let archive_path =
+            std::env::temp_dir().join(format!("devbox-incompatible-{}.zip", Uuid::new_v4()));
         write_test_package_with_engine(&archive_path, "1.0.0", ">=99.0.0");
         let publisher = TrustedPublisher {
             key_id:
@@ -429,13 +489,9 @@ pub(crate) mod tests {
             public_key_pem: "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEABANbfxJp4V1Zm1tpGz3nNQeghxYeqcpi8Je0s2VUSRo=\n-----END PUBLIC KEY-----\n".to_owned(),
             revoked: false,
         };
-        assert!(inspect_package(
-            &archive_path,
-            Some(&publisher),
-            false,
-            &PackagePolicy::default(),
-        )
-        .is_err());
+        assert!(
+            inspect_package(&archive_path, Some(&publisher), &PackagePolicy::default(),).is_err()
+        );
         let _ = std::fs::remove_file(archive_path);
     }
 }

@@ -21,6 +21,7 @@ const allowedPermissions = new Set([
   "storage:read",
   "storage:write",
 ]);
+const allowedIcons = new Set(["binary", "box", "braces", "clock", "code", "fingerprint", "plug"]);
 const allowedTopLevelFields = new Set([
   "schemaVersion",
   "id",
@@ -76,12 +77,7 @@ export function validateManifest(manifest) {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(manifest.version ?? "")) {
     throw new Error("插件版本必须是 SemVer");
   }
-  assertExactKeys(
-    manifest.publisher,
-    "publisher",
-    ["id", "name", "keyId"],
-    ["id", "name", "keyId"],
-  );
+  assertExactKeys(manifest.publisher, "publisher", ["id", "name", "keyId"], ["id", "name"]);
   if (!/^[a-z0-9][a-z0-9.-]{1,63}$/.test(manifest.publisher.id ?? "")) {
     throw new Error("发布者 ID 无效");
   }
@@ -92,7 +88,10 @@ export function validateManifest(manifest) {
   ) {
     throw new Error("发布者名称无效");
   }
-  if (!/^[a-f0-9]{16,64}$/.test(manifest.publisher.keyId ?? "")) {
+  if (
+    manifest.publisher.keyId !== undefined &&
+    !/^[a-f0-9]{16,64}$/.test(manifest.publisher.keyId)
+  ) {
     throw new Error("发布者 keyId 无效");
   }
   assertExactKeys(manifest.engines, "engines", ["devbox", "pluginApi"], ["devbox", "pluginApi"]);
@@ -125,9 +124,37 @@ export function validateManifest(manifest) {
     assertExactKeys(
       view,
       "view",
-      ["id", "titleKey", "icon", "order"],
-      ["id", "titleKey", "icon", "order"],
+      ["id", "titleKey", "icon", "order", "category"],
+      ["id", "titleKey", "icon", "order", "category"],
     );
+    assertExactKeys(
+      view.category,
+      "view.category",
+      ["id", "title", "order"],
+      ["id", "title", "order"],
+    );
+    assertExactKeys(
+      view.category.title,
+      "view.category.title",
+      ["zh-CN", "en-US"],
+      ["zh-CN", "en-US"],
+    );
+    const validOrder = (value) => Number.isInteger(value) && value >= 0 && value <= 10_000;
+    const validTitle = (value) =>
+      typeof value === "string" && Boolean(value.trim()) && value.length <= 80;
+    if (
+      !/^[a-z0-9][a-z0-9-]{0,79}$/.test(view.id ?? "") ||
+      typeof view.titleKey !== "string" ||
+      view.titleKey.length < 3 ||
+      !allowedIcons.has(view.icon) ||
+      !validOrder(view.order) ||
+      !/^[a-z0-9][a-z0-9-]{0,79}$/.test(view.category.id ?? "") ||
+      !validOrder(view.category.order) ||
+      !validTitle(view.category.title["zh-CN"]) ||
+      !validTitle(view.category.title["en-US"])
+    ) {
+      throw new Error("插件视图声明无效");
+    }
   }
   for (const command of manifest.contributes.commands ?? []) {
     assertExactKeys(command, "command", ["id", "titleKey"], ["id", "titleKey"]);
@@ -282,7 +309,9 @@ export async function packPlugin({ source, output, privateKey, keyId }) {
       throw new Error(`插件语言资源不存在：${localePath}`);
     }
   }
-  if (manifest.publisher.keyId !== keyId) throw new Error("签名 keyId 与 manifest 不一致");
+  if (!manifest.publisher.keyId || manifest.publisher.keyId !== keyId) {
+    throw new Error("签名 keyId 与 manifest 不一致");
+  }
 
   const checksums = Buffer.from(
     `${JSON.stringify({

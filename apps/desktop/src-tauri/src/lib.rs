@@ -10,11 +10,11 @@ mod state;
 use std::fs;
 
 use commands::{
-    core_ping, plugin_catalog_fetch, plugin_clipboard_read, plugin_clipboard_write, plugin_grants,
-    plugin_install_cancel, plugin_install_confirm, plugin_open, plugin_preflight_offline,
-    plugin_preflight_online, plugin_report_failure, plugin_report_ready, plugin_rollback,
-    plugin_set_enabled, plugin_set_grant, plugin_uninstall, plugin_user_gesture, plugins_list,
-    settings_get, settings_update,
+    core_ping, plugin_clipboard_read, plugin_clipboard_write, plugin_grants, plugin_install_cancel,
+    plugin_install_confirm, plugin_open, plugin_preflight_offline, plugin_report_failure,
+    plugin_report_ready, plugin_rollback, plugin_set_enabled, plugin_set_grant, plugin_uninstall,
+    plugin_user_gesture, plugin_view_close, plugin_view_set_visible, plugins_list, settings_get,
+    settings_update,
 };
 use installer::PluginInstaller;
 use repositories::SettingsRepository;
@@ -48,7 +48,6 @@ pub fn run() {
             settings_update,
             plugins_list,
             plugin_preflight_offline,
-            plugin_preflight_online,
             plugin_install_confirm,
             plugin_install_cancel,
             plugin_set_enabled,
@@ -56,8 +55,9 @@ pub fn run() {
             plugin_set_grant,
             plugin_rollback,
             plugin_uninstall,
-            plugin_catalog_fetch,
             plugin_open,
+            plugin_view_set_visible,
+            plugin_view_close,
             plugin_report_failure,
             plugin_report_ready,
             plugin_user_gesture,

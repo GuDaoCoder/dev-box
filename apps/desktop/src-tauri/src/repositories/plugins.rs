@@ -21,6 +21,7 @@ pub struct InstalledPluginRecord {
     pub source: String,
     pub manifest: PluginManifest,
     pub granted_permissions: Vec<String>,
+    pub signature_status: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -112,6 +113,11 @@ impl PluginRepository {
         let transaction = connection
             .transaction()
             .map_err(|_| DevBoxError::storage(correlation_id))?;
+        let publisher_key_id = manifest
+            .publisher
+            .key_id
+            .clone()
+            .unwrap_or_else(|| format!("unsigned:{}", manifest.publisher.id));
         transaction
             .execute(
                 "INSERT OR IGNORE INTO publishers
@@ -120,7 +126,7 @@ impl PluginRepository {
                 params![
                     manifest.publisher.id,
                     manifest.publisher.name,
-                    manifest.publisher.key_id
+                    publisher_key_id
                 ],
             )
             .map_err(|_| DevBoxError::storage(correlation_id))?;
@@ -300,7 +306,7 @@ impl PluginRepository {
             .prepare(
                 "SELECT p.plugin_id, p.name, p.publisher_id, p.current_version,
                         p.previous_version, p.enabled, p.status, p.source, v.manifest_json,
-                        COALESCE((
+                        v.signature_status, COALESCE((
                           SELECT group_concat(permission, char(31))
                           FROM plugin_grants g
                           WHERE g.plugin_id = p.plugin_id AND g.granted = 1
@@ -321,7 +327,7 @@ impl PluginRepository {
                         Box::new(error),
                     )
                 })?;
-                let grants = row.get::<_, String>(9)?;
+                let grants = row.get::<_, String>(10)?;
                 Ok(InstalledPluginRecord {
                     id: row.get(0)?,
                     name: row.get(1)?,
@@ -332,6 +338,7 @@ impl PluginRepository {
                     status: row.get(6)?,
                     source: row.get(7)?,
                     manifest,
+                    signature_status: row.get(9)?,
                     granted_permissions: grants
                         .split(char::from(31))
                         .filter(|permission| !permission.is_empty())

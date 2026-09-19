@@ -1,12 +1,14 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{
+    AppHandle, LogicalPosition, LogicalSize, Manager, State, Webview, WebviewBuilder, WebviewUrl,
+};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::{
     domain::DevBoxError,
-    installer::{InstallPreflight, PluginCatalog},
+    installer::InstallPreflight,
     ipc::CommandEnvelope,
     repositories::{InstalledPluginRecord, PluginGrantRecord},
     state::AppState,
@@ -20,14 +22,38 @@ pub struct EmptyRequest {}
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct OfflinePreflightRequest {
     path: String,
-    developer_mode: bool,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct OnlinePreflightRequest {
-    package_url: String,
-    expected_sha256: String,
+pub struct PluginViewBounds {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PluginOpenRequest {
+    plugin_id: String,
+    view_id: String,
+    bounds: PluginViewBounds,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PluginViewRequest {
+    plugin_id: String,
+    view_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PluginViewVisibleRequest {
+    plugin_id: String,
+    view_id: String,
+    visible: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,12 +98,6 @@ pub struct PluginGrantRequest {
     expected_revision: Option<i64>,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct CatalogRequest {
-    url: String,
-}
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstalledPluginsResponse {
@@ -88,12 +108,6 @@ pub struct InstalledPluginsResponse {
 #[serde(rename_all = "camelCase")]
 pub struct PreflightResponse {
     preflight: InstallPreflight,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CatalogResponse {
-    catalog: PluginCatalog,
 }
 
 #[derive(Debug, Serialize)]
@@ -135,10 +149,7 @@ pub struct PluginClipboardRequest {
     value: String,
 }
 
-fn validate_core<T>(
-    window: &WebviewWindow,
-    envelope: &CommandEnvelope<T>,
-) -> Result<(), DevBoxError> {
+fn validate_core<T>(window: &Webview, envelope: &CommandEnvelope<T>) -> Result<(), DevBoxError> {
     envelope.validate()?;
     if window.label() != "main" || envelope.plugin_id() != "devbox.core" {
         return Err(DevBoxError::permission_denied(envelope.request_id()));
@@ -146,17 +157,30 @@ fn validate_core<T>(
     Ok(())
 }
 
-fn close_plugin_window(app: &AppHandle, state: &State<'_, AppState>, plugin_id: &str) {
-    let label = format!("plugin-{}", plugin_id.replace('.', "-"));
-    state.runtime.unbind(&label);
-    if let Some(window) = app.get_webview_window(&label) {
-        let _ = window.close();
+fn plugin_view_label(plugin_id: &str, view_id: &str) -> String {
+    format!(
+        "plugin-{}-{}",
+        plugin_id.replace('.', "-"),
+        view_id.replace('.', "-")
+    )
+}
+
+fn close_plugin_webviews(app: &AppHandle, state: &State<'_, AppState>, plugin_id: &str) {
+    for (label, webview) in app.webviews() {
+        if state
+            .runtime
+            .resolve(&label)
+            .is_some_and(|identity| identity.plugin_id == plugin_id)
+        {
+            state.runtime.unbind(&label);
+            let _ = webview.close();
+        }
     }
 }
 
 #[tauri::command]
 pub fn plugins_list(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<EmptyRequest>,
 ) -> Result<InstalledPluginsResponse, DevBoxError> {
@@ -168,47 +192,22 @@ pub fn plugins_list(
 
 #[tauri::command]
 pub fn plugin_preflight_offline(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<OfflinePreflightRequest>,
 ) -> Result<PreflightResponse, DevBoxError> {
     validate_core(&window, &envelope)?;
     let preflight = state.plugins.preflight_offline(
         &PathBuf::from(&envelope.payload.path),
-        envelope.payload.developer_mode,
         envelope.request_id(),
     )?;
     Ok(PreflightResponse { preflight })
 }
 
 #[tauri::command]
-pub async fn plugin_preflight_online(
-    window: WebviewWindow,
-    state: State<'_, AppState>,
-    envelope: CommandEnvelope<OnlinePreflightRequest>,
-) -> Result<PreflightResponse, DevBoxError> {
-    validate_core(&window, &envelope)?;
-    let installer = state.plugins.clone();
-    let request_id = envelope.request_id().to_owned();
-    let worker_request_id = request_id.clone();
-    let payload = envelope.payload;
-    tauri::async_runtime::spawn_blocking(move || {
-        installer
-            .preflight_online(
-                &payload.package_url,
-                &payload.expected_sha256,
-                &worker_request_id,
-            )
-            .map(|preflight| PreflightResponse { preflight })
-    })
-    .await
-    .map_err(|error| DevBoxError::internal(&request_id, error.to_string()))?
-}
-
-#[tauri::command]
 pub fn plugin_install_confirm(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<InstallConfirmRequest>,
 ) -> Result<InstalledPluginsResponse, DevBoxError> {
@@ -218,7 +217,7 @@ pub fn plugin_install_confirm(
         &envelope.payload.granted_permissions,
         envelope.request_id(),
     )?;
-    close_plugin_window(&app, &state, &installed.id);
+    close_plugin_webviews(&app, &state, &installed.id);
     Ok(InstalledPluginsResponse {
         plugins: state.plugins.list(envelope.request_id())?,
     })
@@ -226,7 +225,7 @@ pub fn plugin_install_confirm(
 
 #[tauri::command]
 pub fn plugin_install_cancel(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<InstallTokenRequest>,
 ) -> Result<(), DevBoxError> {
@@ -239,7 +238,7 @@ pub fn plugin_install_cancel(
 #[tauri::command]
 pub fn plugin_set_enabled(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginEnabledRequest>,
 ) -> Result<InstalledPluginsResponse, DevBoxError> {
@@ -250,14 +249,14 @@ pub fn plugin_set_enabled(
         envelope.request_id(),
     )?;
     if !envelope.payload.enabled {
-        close_plugin_window(&app, &state, &envelope.payload.plugin_id);
+        close_plugin_webviews(&app, &state, &envelope.payload.plugin_id);
     }
     Ok(InstalledPluginsResponse { plugins })
 }
 
 #[tauri::command]
 pub fn plugin_grants(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginIdRequest>,
 ) -> Result<PluginGrantsResponse, DevBoxError> {
@@ -271,7 +270,7 @@ pub fn plugin_grants(
 
 #[tauri::command]
 pub fn plugin_set_grant(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginGrantRequest>,
 ) -> Result<PluginGrantRecord, DevBoxError> {
@@ -288,7 +287,7 @@ pub fn plugin_set_grant(
 #[tauri::command]
 pub fn plugin_rollback(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginIdRequest>,
 ) -> Result<InstalledPluginsResponse, DevBoxError> {
@@ -296,19 +295,19 @@ pub fn plugin_rollback(
     let plugins = state
         .plugins
         .rollback(&envelope.payload.plugin_id, envelope.request_id())?;
-    close_plugin_window(&app, &state, &envelope.payload.plugin_id);
+    close_plugin_webviews(&app, &state, &envelope.payload.plugin_id);
     Ok(InstalledPluginsResponse { plugins })
 }
 
 #[tauri::command]
 pub fn plugin_uninstall(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginUninstallRequest>,
 ) -> Result<InstalledPluginsResponse, DevBoxError> {
     validate_core(&window, &envelope)?;
-    close_plugin_window(&app, &state, &envelope.payload.plugin_id);
+    close_plugin_webviews(&app, &state, &envelope.payload.plugin_id);
     Ok(InstalledPluginsResponse {
         plugins: state.plugins.uninstall(
             &envelope.payload.plugin_id,
@@ -319,28 +318,8 @@ pub fn plugin_uninstall(
 }
 
 #[tauri::command]
-pub async fn plugin_catalog_fetch(
-    window: WebviewWindow,
-    state: State<'_, AppState>,
-    envelope: CommandEnvelope<CatalogRequest>,
-) -> Result<CatalogResponse, DevBoxError> {
-    validate_core(&window, &envelope)?;
-    let installer = state.plugins.clone();
-    let request_id = envelope.request_id().to_owned();
-    let worker_request_id = request_id.clone();
-    let url = envelope.payload.url;
-    tauri::async_runtime::spawn_blocking(move || {
-        installer
-            .fetch_catalog(&url, &worker_request_id)
-            .map(|catalog| CatalogResponse { catalog })
-    })
-    .await
-    .map_err(|error| DevBoxError::internal(&request_id, error.to_string()))?
-}
-
-#[tauri::command]
 pub fn plugin_report_ready(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginReadyRequest>,
 ) -> Result<(), DevBoxError> {
@@ -358,7 +337,7 @@ pub fn plugin_report_ready(
 #[tauri::command]
 pub fn plugin_report_failure(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginFailureRequest>,
 ) -> Result<(), DevBoxError> {
@@ -376,13 +355,13 @@ pub fn plugin_report_failure(
         &envelope.payload.version,
         envelope.request_id(),
     )?;
-    close_plugin_window(&app, &state, envelope.plugin_id());
+    close_plugin_webviews(&app, &state, envelope.plugin_id());
     Ok(())
 }
 
 #[tauri::command]
 pub fn plugin_user_gesture(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginGestureRequest>,
 ) -> Result<String, DevBoxError> {
@@ -400,7 +379,7 @@ pub fn plugin_user_gesture(
 #[tauri::command]
 pub fn plugin_clipboard_read(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginClipboardRequest>,
 ) -> Result<String, DevBoxError> {
@@ -413,7 +392,7 @@ pub fn plugin_clipboard_read(
 #[tauri::command]
 pub fn plugin_clipboard_write(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginClipboardRequest>,
 ) -> Result<(), DevBoxError> {
@@ -430,7 +409,7 @@ pub fn plugin_clipboard_write(
 }
 
 fn validate_plugin_capability<T>(
-    window: &WebviewWindow,
+    window: &Webview,
     state: &State<'_, AppState>,
     envelope: &CommandEnvelope<T>,
     permission: &str,
@@ -469,21 +448,43 @@ impl ClipboardGesture for PluginClipboardRequest {
 #[tauri::command]
 pub async fn plugin_open(
     app: AppHandle,
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
-    envelope: CommandEnvelope<PluginIdRequest>,
+    envelope: CommandEnvelope<PluginOpenRequest>,
 ) -> Result<PluginOpenedResponse, DevBoxError> {
     validate_core(&window, &envelope)?;
+    validate_view_bounds(&envelope.payload.bounds, envelope.request_id())?;
     let plugin = state
         .plugins
         .list(envelope.request_id())?
         .into_iter()
         .find(|plugin| plugin.id == envelope.payload.plugin_id && plugin.enabled)
         .ok_or_else(|| DevBoxError::not_found(envelope.request_id(), "plugin"))?;
-    let label = format!("plugin-{}", plugin.id.replace('.', "-"));
-    if let Some(existing) = app.get_webview_window(&label) {
+    if !plugin
+        .manifest
+        .contributes
+        .views
+        .iter()
+        .any(|view| view.id == envelope.payload.view_id)
+    {
+        return Err(DevBoxError::not_found(envelope.request_id(), "plugin view"));
+    }
+    let label = plugin_view_label(&plugin.id, &envelope.payload.view_id);
+    if let Some(existing) = app.get_webview(&label) {
         existing
-            .set_focus()
+            .set_position(LogicalPosition::new(
+                envelope.payload.bounds.x,
+                envelope.payload.bounds.y,
+            ))
+            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+        existing
+            .set_size(LogicalSize::new(
+                envelope.payload.bounds.width,
+                envelope.payload.bounds.height,
+            ))
+            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+        existing
+            .show()
             .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
         return Ok(PluginOpenedResponse { label });
     }
@@ -504,8 +505,8 @@ pub async fn plugin_open(
         )
         .map_err(|reason| DevBoxError::internal(envelope.request_id(), reason))?;
     let url = format!(
-        "devbox-plugin://{}/{}",
-        plugin.id, plugin.manifest.entry.main
+        "devbox-plugin://{}/{}#{}",
+        plugin.id, plugin.manifest.entry.main, envelope.payload.view_id
     )
     .parse()
     .map_err(|_| DevBoxError::internal(envelope.request_id(), "插件入口 URL 无效"))?;
@@ -535,10 +536,7 @@ pub async fn plugin_open(
         "window.dispatchEvent(new CustomEvent('devbox:host-ready',{detail:window.__DEVBOX_PLUGIN__}));})();",
     ]
     .concat();
-    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::CustomProtocol(url))
-        .title(&plugin.name)
-        .inner_size(1000.0, 720.0)
-        .min_inner_size(640.0, 480.0)
+    let child = WebviewBuilder::new(&label, WebviewUrl::CustomProtocol(url))
         .initialization_script(initialization_script)
         .on_navigation(move |url| {
             let native_protocol = url.scheme() == "devbox-plugin"
@@ -547,9 +545,16 @@ pub async fn plugin_open(
             let rewritten_protocol = matches!(url.scheme(), "http" | "https")
                 && url.host_str() == Some("devbox-plugin.localhost");
             native_protocol || rewritten_protocol
-        })
-        .build();
-    if let Err(error) = window {
+        });
+    let created = window.window().add_child(
+        child,
+        LogicalPosition::new(envelope.payload.bounds.x, envelope.payload.bounds.y),
+        LogicalSize::new(
+            envelope.payload.bounds.width,
+            envelope.payload.bounds.height,
+        ),
+    );
+    if let Err(error) = created {
         state.runtime.unbind(&label);
         return Err(DevBoxError::internal(
             envelope.request_id(),
@@ -575,11 +580,65 @@ pub async fn plugin_open(
             "runtime-timeout",
         );
         state.runtime.unbind(&timeout_label);
-        if let Some(window) = timeout_app.get_webview_window(&timeout_label) {
-            let _ = window.close();
+        if let Some(webview) = timeout_app.get_webview(&timeout_label) {
+            let _ = webview.close();
         }
     });
     Ok(PluginOpenedResponse { label })
+}
+
+#[tauri::command]
+pub fn plugin_view_set_visible(
+    app: AppHandle,
+    window: Webview,
+    envelope: CommandEnvelope<PluginViewVisibleRequest>,
+) -> Result<(), DevBoxError> {
+    validate_core(&window, &envelope)?;
+    let label = plugin_view_label(&envelope.payload.plugin_id, &envelope.payload.view_id);
+    let webview = app
+        .get_webview(&label)
+        .ok_or_else(|| DevBoxError::not_found(envelope.request_id(), "plugin view"))?;
+    if envelope.payload.visible {
+        webview.show()
+    } else {
+        webview.hide()
+    }
+    .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))
+}
+
+#[tauri::command]
+pub fn plugin_view_close(
+    app: AppHandle,
+    window: Webview,
+    state: State<'_, AppState>,
+    envelope: CommandEnvelope<PluginViewRequest>,
+) -> Result<(), DevBoxError> {
+    validate_core(&window, &envelope)?;
+    let label = plugin_view_label(&envelope.payload.plugin_id, &envelope.payload.view_id);
+    if let Some(webview) = app.get_webview(&label) {
+        webview
+            .close()
+            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+    }
+    state.runtime.unbind(&label);
+    Ok(())
+}
+
+fn validate_view_bounds(bounds: &PluginViewBounds, request_id: &str) -> Result<(), DevBoxError> {
+    let valid = [bounds.x, bounds.y, bounds.width, bounds.height]
+        .iter()
+        .all(|value| value.is_finite())
+        && bounds.x >= 0.0
+        && bounds.y >= 0.0
+        && bounds.width >= 1.0
+        && bounds.height >= 1.0
+        && bounds.width <= 16_384.0
+        && bounds.height <= 16_384.0;
+    if valid {
+        Ok(())
+    } else {
+        Err(DevBoxError::invalid_argument(request_id, "bounds"))
+    }
 }
 
 #[cfg(test)]

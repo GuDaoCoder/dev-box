@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 pub struct PluginPublisher {
     pub id: String,
     pub name: String,
-    pub key_id: String,
+    #[serde(default)]
+    pub key_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -30,6 +31,15 @@ pub struct ViewContribution {
     pub id: String,
     pub title_key: String,
     pub icon: String,
+    pub order: u32,
+    pub category: ViewCategory,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ViewCategory {
+    pub id: String,
+    pub title: BTreeMap<String, String>,
     pub order: u32,
 }
 
@@ -88,16 +98,16 @@ impl PluginManifest {
                     || character.is_ascii_digit()
                     || matches!(character, '.' | '-')
             });
-        if !publisher_id_valid
-            || self.publisher.name.trim().is_empty()
-            || !(16..=64).contains(&self.publisher.key_id.len())
-            || !self
-                .publisher
-                .key_id
-                .chars()
-                .all(|character| character.is_ascii_hexdigit())
-        {
+        if !publisher_id_valid || self.publisher.name.trim().is_empty() {
             return Err("插件发布者声明无效".to_owned());
+        }
+        if self.publisher.key_id.as_ref().is_some_and(|key_id| {
+            !(16..=64).contains(&key_id.len())
+                || !key_id
+                    .chars()
+                    .all(|character| character.is_ascii_hexdigit())
+        }) {
+            return Err("插件发布者 keyId 无效".to_owned());
         }
         if self.engines.devbox.is_empty() || self.engines.plugin_api.is_empty() {
             return Err("缺少兼容版本声明".to_owned());
@@ -133,7 +143,15 @@ impl PluginManifest {
         if self.contributes.views.len() > 16 || self.contributes.commands.len() > 32 {
             return Err("插件贡献点数量超过限制".to_owned());
         }
-        let allowed_icons = ["box", "braces", "clock", "code", "fingerprint", "plug"];
+        let allowed_icons = [
+            "binary",
+            "box",
+            "braces",
+            "clock",
+            "code",
+            "fingerprint",
+            "plug",
+        ];
         let mut view_ids = HashSet::new();
         for view in &self.contributes.views {
             let valid_id = !view.id.is_empty()
@@ -146,6 +164,19 @@ impl PluginManifest {
                 || view.title_key.len() < 3
                 || !allowed_icons.contains(&view.icon.as_str())
                 || view.order > 10_000
+                || view.category.id.is_empty()
+                || view.category.id.len() > 80
+                || !view.category.id.chars().all(|character| {
+                    character.is_ascii_lowercase() || character.is_ascii_digit() || character == '-'
+                })
+                || view.category.order > 10_000
+                || view
+                    .category
+                    .title
+                    .keys()
+                    .any(|locale| !matches!(locale.as_str(), "zh-CN" | "en-US"))
+                || !matches!(view.category.title.get("zh-CN"), Some(title) if !title.trim().is_empty() && title.len() <= 80)
+                || !matches!(view.category.title.get("en-US"), Some(title) if !title.trim().is_empty() && title.len() <= 80)
             {
                 return Err("插件视图声明无效".to_owned());
             }

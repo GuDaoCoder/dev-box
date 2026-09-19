@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS plugins (
     previous_version TEXT,
     enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
     status TEXT NOT NULL CHECK (status IN ('staging', 'installed', 'updating', 'disabled', 'uninstalling', 'failed')),
-    source TEXT NOT NULL CHECK (source IN ('online', 'offline', 'development')),
+    source TEXT NOT NULL CHECK (source IN ('offline', 'development')),
     failure_count INTEGER NOT NULL DEFAULT 0,
     installed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS plugin_versions (
     install_path TEXT NOT NULL,
     archive_sha256 TEXT NOT NULL,
     signature_status TEXT NOT NULL CHECK (signature_status IN ('verified', 'unsigned-development')),
-    source TEXT NOT NULL CHECK (source IN ('online', 'offline', 'development')),
+    source TEXT NOT NULL CHECK (source IN ('offline', 'development')),
     source_reference TEXT,
     healthy INTEGER NOT NULL DEFAULT 1 CHECK (healthy IN (0, 1)),
     installed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,

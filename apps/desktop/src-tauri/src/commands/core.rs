@@ -2,7 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use tauri::{State, WebviewWindow};
+use tauri::{State, Webview};
 
 use crate::{domain::DevBoxError, ipc::CommandEnvelope, state::AppState};
 
@@ -23,7 +23,7 @@ pub struct CorePingResponse {
 
 #[tauri::command]
 pub fn core_ping(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<CorePingRequest>,
 ) -> Result<CorePingResponse, DevBoxError> {

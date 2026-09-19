@@ -37,6 +37,11 @@ export const manifest: PluginManifest = {
         titleKey: "plugin-foundation:navigation.title",
         icon: "box",
         order: 10,
+        category: {
+          id: "system",
+          title: { "zh-CN": "系统", "en-US": "System" },
+          order: 90,
+        },
       },
     ],
     commands: [

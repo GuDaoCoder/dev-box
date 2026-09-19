@@ -26,7 +26,19 @@ async function createFixture() {
       permissions: ["storage:read"],
       locales: {},
       contributes: {
-        views: [{ id: "fixture", titleKey: "fixture.title", icon: "plug", order: 1 }],
+        views: [
+          {
+            id: "fixture",
+            titleKey: "fixture.title",
+            icon: "plug",
+            order: 1,
+            category: {
+              id: "examples",
+              title: { "zh-CN": "示例", "en-US": "Examples" },
+              order: 70,
+            },
+          },
+        ],
       },
     }),
   );
@@ -36,7 +48,7 @@ async function createFixture() {
 describe("plugin-pack", () => {
   it("生成可重复验证的签名插件包", async () => {
     const source = await createFixture();
-    const output = path.join(source, "fixture.devbox-plugin");
+    const output = path.join(source, "fixture.zip");
     const { privateKey, publicKey } = generateKeyPairSync("ed25519");
     await packPlugin({ source, output, privateKey, keyId: "0123456789abcdef" });
 
@@ -48,7 +60,7 @@ describe("plugin-pack", () => {
 
   it("拒绝被篡改的插件文件", async () => {
     const source = await createFixture();
-    const output = path.join(source, "fixture.devbox-plugin");
+    const output = path.join(source, "fixture.zip");
     const { privateKey, publicKey } = generateKeyPairSync("ed25519");
     await packPlugin({ source, output, privateKey, keyId: "0123456789abcdef" });
     const archive = await readFile(output);

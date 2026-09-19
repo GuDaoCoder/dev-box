@@ -6,10 +6,7 @@ use std::{
     sync::Mutex,
 };
 
-use reqwest::{blocking::Client, redirect::Policy};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use url::Url;
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::{
@@ -25,7 +22,6 @@ struct PendingInstall {
     package_path: PathBuf,
     source: String,
     source_reference: Option<String>,
-    developer_mode: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -36,39 +32,6 @@ pub struct InstallPreflight {
     pub source: String,
     pub source_reference: Option<String>,
     pub change: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct PluginCatalog {
-    pub schema_version: u8,
-    pub generated_at: String,
-    pub plugins: Vec<CatalogPlugin>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct CatalogPlugin {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub publisher: String,
-    pub versions: Vec<CatalogVersion>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct CatalogVersion {
-    pub version: String,
-    pub package_url: String,
-    pub package_sha256: String,
-    pub devbox: String,
-    pub plugin_api: String,
-    pub released_at: String,
-    #[serde(default)]
-    pub release_notes: String,
-    #[serde(default)]
-    pub revoked: bool,
 }
 
 pub struct PluginInstaller {
@@ -112,10 +75,9 @@ impl PluginInstaller {
     pub fn preflight_offline(
         &self,
         source_path: &Path,
-        developer_mode: bool,
         correlation_id: &str,
     ) -> Result<InstallPreflight, DevBoxError> {
-        if source_path.extension().and_then(|value| value.to_str()) != Some("devbox-plugin") {
+        if source_path.extension().and_then(|value| value.to_str()) != Some("zip") {
             return Err(DevBoxError::invalid_argument(correlation_id, "path"));
         }
         let metadata = fs::metadata(source_path)
@@ -127,65 +89,13 @@ impl PluginInstaller {
             ));
         }
         let token = Uuid::new_v4().to_string();
-        let pending_path = self
-            .staging_directory
-            .join(format!("{token}.devbox-plugin"));
+        let pending_path = self.staging_directory.join(format!("{token}.zip"));
         fs::copy(source_path, &pending_path).map_err(|_| DevBoxError::storage(correlation_id))?;
-        let source = if developer_mode {
-            "development"
-        } else {
-            "offline"
-        };
         self.preflight_copied(
             token,
             pending_path,
-            source,
+            "offline",
             Some(source_path.to_string_lossy().as_ref()),
-            developer_mode,
-            correlation_id,
-        )
-    }
-
-    pub fn preflight_online(
-        &self,
-        package_url: &str,
-        expected_sha256: &str,
-        correlation_id: &str,
-    ) -> Result<InstallPreflight, DevBoxError> {
-        validate_online_url(package_url, correlation_id)?;
-        if expected_sha256.len() != 64
-            || !expected_sha256
-                .chars()
-                .all(|character| character.is_ascii_hexdigit())
-        {
-            return Err(DevBoxError::invalid_argument(
-                correlation_id,
-                "expectedSha256",
-            ));
-        }
-        let token = Uuid::new_v4().to_string();
-        let pending_path = self
-            .staging_directory
-            .join(format!("{token}.devbox-plugin"));
-        let actual = download_to_file(
-            package_url,
-            &pending_path,
-            self.policy.max_archive_bytes,
-            correlation_id,
-        )?;
-        if !actual.eq_ignore_ascii_case(expected_sha256) {
-            let _ = fs::remove_file(&pending_path);
-            return Err(DevBoxError::plugin_package(
-                correlation_id,
-                "在线插件包摘要与目录不一致",
-            ));
-        }
-        self.preflight_copied(
-            token,
-            pending_path,
-            "online",
-            Some(package_url),
-            false,
             correlation_id,
         )
     }
@@ -197,10 +107,9 @@ impl PluginInstaller {
         pending_path: PathBuf,
         source: &str,
         source_reference: Option<&str>,
-        developer_mode: bool,
         correlation_id: &str,
     ) -> Result<InstallPreflight, DevBoxError> {
-        let package = match self.inspect(&pending_path, developer_mode, correlation_id) {
+        let package = match self.inspect(&pending_path, correlation_id) {
             Ok(package) => package,
             Err(error) => {
                 let _ = fs::remove_file(&pending_path);
@@ -230,7 +139,6 @@ impl PluginInstaller {
                     package_path: pending_path,
                     source: source.to_owned(),
                     source_reference: source_reference.map(str::to_owned),
-                    developer_mode,
                 },
             );
         Ok(InstallPreflight {
@@ -254,11 +162,7 @@ impl PluginInstaller {
             .map_err(|_| DevBoxError::storage(correlation_id))?
             .remove(token)
             .ok_or_else(|| DevBoxError::not_found(correlation_id, "installToken"))?;
-        let package = match self.inspect(
-            &pending.package_path,
-            pending.developer_mode,
-            correlation_id,
-        ) {
+        let package = match self.inspect(&pending.package_path, correlation_id) {
             Ok(package) => package,
             Err(error) => {
                 let _ = fs::remove_file(&pending.package_path);
@@ -274,14 +178,6 @@ impl PluginInstaller {
                 correlation_id,
                 "grantedPermissions",
             ));
-        }
-        if pending.developer_mode
-            && granted_permissions
-                .iter()
-                .any(|permission| !permission.starts_with("storage:"))
-        {
-            let _ = fs::remove_file(&pending.package_path);
-            return Err(DevBoxError::permission_denied(correlation_id));
         }
         let result = self.install_verified(&package, &pending, granted_permissions, correlation_id);
         let _ = fs::remove_file(&pending.package_path);
@@ -437,19 +333,6 @@ impl PluginInstaller {
         self.repository.list(correlation_id)
     }
 
-    pub fn fetch_catalog(
-        &self,
-        catalog_url: &str,
-        correlation_id: &str,
-    ) -> Result<PluginCatalog, DevBoxError> {
-        validate_online_url(catalog_url, correlation_id)?;
-        let bytes = download_limited(catalog_url, 2 * 1024 * 1024, correlation_id)?;
-        let catalog: PluginCatalog = serde_json::from_slice(&bytes)
-            .map_err(|_| DevBoxError::plugin_package(correlation_id, "插件目录格式无效"))?;
-        validate_catalog(&catalog, correlation_id)?;
-        Ok(catalog)
-    }
-
     pub fn recover(&self, correlation_id: &str) -> Result<(), String> {
         self.repository
             .recover_interrupted(correlation_id)
@@ -479,16 +362,14 @@ impl PluginInstaller {
         Ok(())
     }
 
-    fn inspect(
-        &self,
-        path: &Path,
-        developer_mode: bool,
-        correlation_id: &str,
-    ) -> Result<VerifiedPackage, DevBoxError> {
+    fn inspect(&self, path: &Path, correlation_id: &str) -> Result<VerifiedPackage, DevBoxError> {
         let key_id = read_manifest_key_id(path, &self.policy)
             .map_err(|reason| DevBoxError::plugin_package(correlation_id, reason))?;
-        let publisher = self.repository.trusted_publisher(&key_id, correlation_id)?;
-        inspect_package(path, publisher.as_ref(), developer_mode, &self.policy).map_err(|reason| {
+        let publisher = match key_id {
+            Some(key_id) => self.repository.trusted_publisher(&key_id, correlation_id)?,
+            None => None,
+        };
+        inspect_package(path, publisher.as_ref(), &self.policy).map_err(|reason| {
             if reason.contains("插件要求") || reason.contains("兼容版本") {
                 DevBoxError::incompatible(correlation_id, reason)
             } else {
@@ -618,7 +499,7 @@ fn clean_directory(directory: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn read_manifest_key_id(path: &Path, policy: &PackagePolicy) -> Result<String, String> {
+fn read_manifest_key_id(path: &Path, policy: &PackagePolicy) -> Result<Option<String>, String> {
     let file = fs::File::open(path).map_err(|error| error.to_string())?;
     let mut archive =
         zip::ZipArchive::new(file).map_err(|_| "插件包不是有效 ZIP 文件".to_owned())?;
@@ -640,165 +521,49 @@ fn read_manifest_key_id(path: &Path, policy: &PackagePolicy) -> Result<String, S
     Ok(manifest.publisher.key_id)
 }
 
-fn validate_online_url(value: &str, correlation_id: &str) -> Result<Url, DevBoxError> {
-    let url =
-        Url::parse(value).map_err(|_| DevBoxError::invalid_argument(correlation_id, "url"))?;
-    if !is_allowed_online_url(&url) {
-        return Err(DevBoxError::invalid_argument(correlation_id, "url"));
-    }
-    if !url.username().is_empty() || url.password().is_some() {
-        return Err(DevBoxError::invalid_argument(correlation_id, "url"));
-    }
-    Ok(url)
-}
-
-fn is_allowed_online_url(url: &Url) -> bool {
-    let official = url.scheme() == "https"
-        && matches!(
-            url.host_str(),
-            Some("plugins.devbox.app" | "cdn.devbox.app")
-        );
-    let local_development = cfg!(debug_assertions)
-        && url.scheme() == "http"
-        && matches!(url.host_str(), Some("127.0.0.1" | "localhost"));
-    official || local_development
-}
-
-fn download_limited(url: &str, maximum: u64, correlation_id: &str) -> Result<Vec<u8>, DevBoxError> {
-    let response = download_response(url, maximum, correlation_id)?;
-    let mut bytes = Vec::new();
-    response
-        .take(maximum + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| DevBoxError::network(correlation_id, error.to_string()))?;
-    if bytes.len() as u64 > maximum {
-        return Err(DevBoxError::network(correlation_id, "下载内容超过大小限制"));
-    }
-    Ok(bytes)
-}
-
-fn download_to_file(
-    url: &str,
-    destination: &Path,
-    maximum: u64,
-    correlation_id: &str,
-) -> Result<String, DevBoxError> {
-    let mut response = download_response(url, maximum, correlation_id)?;
-    let result = (|| {
-        let mut file =
-            fs::File::create(destination).map_err(|_| DevBoxError::storage(correlation_id))?;
-        let mut hasher = Sha256::new();
-        let mut total = 0_u64;
-        let mut buffer = [0_u8; 64 * 1024];
-        loop {
-            let read = response
-                .read(&mut buffer)
-                .map_err(|error| DevBoxError::network(correlation_id, error.to_string()))?;
-            if read == 0 {
-                break;
-            }
-            total = total.saturating_add(read as u64);
-            if total > maximum {
-                return Err(DevBoxError::network(correlation_id, "下载内容超过大小限制"));
-            }
-            std::io::Write::write_all(&mut file, &buffer[..read])
-                .map_err(|_| DevBoxError::storage(correlation_id))?;
-            hasher.update(&buffer[..read]);
-        }
-        Ok(hex::encode(hasher.finalize()))
-    })();
-    if result.is_err() {
-        let _ = fs::remove_file(destination);
-    }
-    result
-}
-
-fn download_response(
-    url: &str,
-    maximum: u64,
-    correlation_id: &str,
-) -> Result<reqwest::blocking::Response, DevBoxError> {
-    let client = Client::builder()
-        .connect_timeout(std::time::Duration::from_secs(10))
-        .timeout(std::time::Duration::from_secs(60))
-        .redirect(Policy::custom(|attempt| {
-            if attempt.previous().len() >= 3 {
-                attempt.error("重定向次数超过限制")
-            } else if is_allowed_online_url(attempt.url()) {
-                attempt.follow()
-            } else {
-                attempt.stop()
-            }
-        }))
-        .build()
-        .map_err(|error| DevBoxError::network(correlation_id, error.to_string()))?;
-    let response = client
-        .get(url)
-        .send()
-        .and_then(reqwest::blocking::Response::error_for_status)
-        .map_err(|error| DevBoxError::network(correlation_id, error.to_string()))?;
-    if response
-        .content_length()
-        .is_some_and(|length| length > maximum)
-    {
-        return Err(DevBoxError::network(correlation_id, "下载内容超过大小限制"));
-    }
-    Ok(response)
-}
-
-fn validate_catalog(catalog: &PluginCatalog, correlation_id: &str) -> Result<(), DevBoxError> {
-    if catalog.schema_version != 1 || catalog.plugins.len() > 500 {
-        return Err(DevBoxError::plugin_package(
-            correlation_id,
-            "插件目录版本或数量无效",
-        ));
-    }
-    let mut identifiers = std::collections::HashSet::new();
-    for plugin in &catalog.plugins {
-        if !plugin.id.starts_with("devbox.") || !identifiers.insert(&plugin.id) {
-            return Err(DevBoxError::plugin_package(
-                correlation_id,
-                "插件目录包含非法或重复 ID",
-            ));
-        }
-        for version in &plugin.versions {
-            if version.package_sha256.len() != 64 || version.revoked {
-                continue;
-            }
-            validate_online_url(&version.package_url, correlation_id)?;
-        }
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
-    use std::{io::Write, net::TcpListener, thread};
-
     use super::*;
-    use crate::{plugin_package::tests::write_test_package, repositories::SettingsRepository};
+    use crate::{
+        plugin_package::tests::{write_test_package, write_unsigned_test_package},
+        repositories::SettingsRepository,
+    };
 
     #[test]
-    fn 线上地址默认只允许安全协议() {
-        assert!(validate_online_url("https://plugins.devbox.app/catalog.json", "test").is_ok());
-        assert!(validate_online_url("https://plugins.example.com/catalog.json", "test").is_err());
-        assert!(validate_online_url("http://plugins.example.com/catalog.json", "test").is_err());
+    fn 本地未签名_zip_可以在警告状态下安装() {
+        let root = std::env::temp_dir().join(format!("devbox-unsigned-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).expect("应创建测试目录");
+        let installer =
+            PluginInstaller::open(&root, &root.join("devbox.db")).expect("应初始化安装器");
+        let package = root.join("unsigned.zip");
+        write_unsigned_test_package(&package);
+
+        let preflight = installer
+            .preflight_offline(&package, "unsigned-preflight")
+            .expect("未签名 ZIP 应通过预检");
+        assert_eq!(preflight.summary.signature_status, "unsigned-development");
+        let installed = installer
+            .confirm(&preflight.token, &[], "unsigned-install")
+            .expect("未签名 ZIP 应完成安装");
+        assert_eq!(installed.signature_status, "unsigned-development");
+
+        fs::remove_dir_all(root).expect("应清理测试目录");
     }
 
     #[test]
-    fn 离线与在线安装共用更新回退卸载流程() {
+    fn 本地_zip_安装支持更新回退和卸载() {
         let root = std::env::temp_dir().join(format!("devbox-installer-{}", Uuid::new_v4()));
         fs::create_dir_all(&root).expect("应创建测试目录");
         let database_path = root.join("devbox.db");
         let installer = PluginInstaller::open(&root, &database_path).expect("应初始化安装器");
         let settings = SettingsRepository::open(&database_path).expect("应打开设置存储");
-        let version_one = root.join("fixture-v1.devbox-plugin");
-        let version_two = root.join("fixture-v2.devbox-plugin");
+        let version_one = root.join("fixture-v1.zip");
+        let version_two = root.join("fixture-v2.zip");
         write_test_package(&version_one, "1.0.0");
         write_test_package(&version_two, "1.1.0");
 
         let preflight = installer
-            .preflight_offline(&version_one, false, "offline-v1")
+            .preflight_offline(&version_one, "offline-v1")
             .expect("离线包应通过预检");
         assert_eq!(preflight.source, "offline");
         let installed = installer
@@ -817,7 +582,7 @@ mod tests {
             .expect("应写入插件数据");
 
         let preflight = installer
-            .preflight_offline(&version_two, false, "offline-v2")
+            .preflight_offline(&version_two, "offline-v2")
             .expect("更新包应通过预检");
         assert_eq!(preflight.change, "update");
         let installed = installer
@@ -839,7 +604,7 @@ mod tests {
         );
 
         let preflight = installer
-            .preflight_offline(&version_two, false, "offline-v2-again")
+            .preflight_offline(&version_two, "offline-v2-again")
             .expect("应可再次安装更新包");
         installer
             .confirm(&preflight.token, &[], "offline-v2-again")
@@ -853,7 +618,7 @@ mod tests {
             .expect("回退后插件应存在");
         assert_eq!(installed.current_version, "1.0.0");
 
-        let tampered = root.join("fixture-tampered.devbox-plugin");
+        let tampered = root.join("fixture-tampered.zip");
         let mut tampered_bytes = fs::read(&version_one).expect("应读取测试包");
         let marker = b"fixture 1.0.0";
         let marker_offset = tampered_bytes
@@ -862,9 +627,7 @@ mod tests {
             .expect("测试包应包含入口内容");
         tampered_bytes[marker_offset] ^= 1;
         fs::write(&tampered, tampered_bytes).expect("应写入篡改包");
-        assert!(installer
-            .preflight_offline(&tampered, false, "tampered")
-            .is_err());
+        assert!(installer.preflight_offline(&tampered, "tampered").is_err());
         assert_eq!(
             installer.list("after-tamper").expect("应读取插件")[0].current_version,
             "1.0.0"
@@ -878,50 +641,15 @@ mod tests {
             .expect("应读取保留数据")
             .is_some());
 
-        let unavailable = TcpListener::bind("127.0.0.1:0").expect("应获取本地端口");
-        let unavailable_address = unavailable.local_addr().expect("应读取本地端口");
-        drop(unavailable);
-        assert!(installer
-            .preflight_online(
-                &format!("http://{unavailable_address}/offline.devbox-plugin"),
-                &"0".repeat(64),
-                "offline-network",
-            )
-            .is_err());
-
-        let package_bytes = fs::read(&version_one).expect("应读取在线测试包");
-        let expected_sha256 = hex::encode(Sha256::digest(&package_bytes));
-        let listener = TcpListener::bind("127.0.0.1:0").expect("应启动本地测试服务");
-        let address = listener.local_addr().expect("应读取服务地址");
-        let server = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().expect("应接收下载请求");
-            let mut request = [0_u8; 2048];
-            let _ = stream.read(&mut request).expect("应读取 HTTP 请求");
-            write!(
-                stream,
-                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-                package_bytes.len()
-            )
-            .expect("应写入 HTTP 响应头");
-            stream.write_all(&package_bytes).expect("应写入插件包");
-        });
         let preflight = installer
-            .preflight_online(
-                &format!("http://{address}/fixture.devbox-plugin"),
-                &expected_sha256,
-                "online-v1",
-            )
-            .expect("在线包应通过同一预检流程");
-        server.join().expect("本地测试服务应正常结束");
-        assert_eq!(preflight.source, "online");
-        let installed = installer
-            .confirm(&preflight.token, &[], "online-v1")
-            .expect("在线包应通过同一安装流程");
-        assert_eq!(installed.current_version, "1.0.0");
-        assert!(installed.granted_permissions.is_empty());
+            .preflight_offline(&version_one, "offline-delete-data")
+            .expect("应可重新安装本地 ZIP");
+        installer
+            .confirm(&preflight.token, &[], "offline-delete-data")
+            .expect("应重新安装本地 ZIP");
         assert!(installer
-            .uninstall("devbox.fixture", true, "uninstall-online")
-            .expect("在线插件应可卸载")
+            .uninstall("devbox.fixture", true, "uninstall-delete-data")
+            .expect("本地插件应可卸载并删除数据")
             .is_empty());
         assert!(settings
             .get("devbox.fixture", "fixture.value", "deleted-setting")

@@ -78,7 +78,7 @@ export interface RuntimePluginManifest {
   publisher: {
     id: string;
     name: string;
-    keyId: string;
+    keyId?: string;
   };
   engines: {
     devbox: string;
@@ -97,6 +97,11 @@ export interface RuntimePluginManifest {
       titleKey: string;
       icon: string;
       order: number;
+      category: {
+        id: string;
+        title: Record<"zh-CN" | "en-US", string>;
+        order: number;
+      };
     }>;
     commands?: Array<{
       id: string;
@@ -113,49 +118,25 @@ export interface InstalledPlugin {
   previousVersion?: string;
   enabled: boolean;
   status: "installed" | "disabled" | "failed";
-  source: "online" | "offline" | "development";
+  source: "offline" | "development";
   manifest: RuntimePluginManifest;
   grantedPermissions: PluginPermission[];
+  signatureStatus: "verified" | "unsigned" | "unsigned-development";
 }
 
 export interface PackageSummary {
   manifest: RuntimePluginManifest;
   archiveSha256: string;
-  signatureStatus: "verified" | "unsigned-development";
+  signatureStatus: "verified" | "unsigned" | "unsigned-development";
   expandedSize: number;
 }
 
 export interface InstallPreflight {
   token: string;
   summary: PackageSummary;
-  source: "online" | "offline" | "development";
+  source: "offline" | "development";
   sourceReference?: string;
   change: "install" | "update" | "reinstall";
-}
-
-export interface CatalogVersion {
-  version: string;
-  packageUrl: string;
-  packageSha256: string;
-  devbox: string;
-  pluginApi: string;
-  releasedAt: string;
-  releaseNotes: string;
-  revoked: boolean;
-}
-
-export interface CatalogPlugin {
-  id: string;
-  name: string;
-  description: string;
-  publisher: string;
-  versions: CatalogVersion[];
-}
-
-export interface PluginCatalog {
-  schemaVersion: 1;
-  generatedAt: string;
-  plugins: CatalogPlugin[];
 }
 
 export interface InstalledPluginsResponse {
@@ -174,10 +155,6 @@ export interface PluginGrantsResponse {
 
 export interface PreflightResponse {
   preflight: InstallPreflight;
-}
-
-export interface CatalogResponse {
-  catalog: PluginCatalog;
 }
 
 export function createEnvelope<T>(pluginId: string, payload: T): CommandEnvelope<T> {

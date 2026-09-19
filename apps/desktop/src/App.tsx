@@ -1,80 +1,76 @@
-import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
-  Blocks,
-  Box,
-  Command,
-  Languages,
-  Moon,
-  Search,
-  Settings,
-  Sun,
-  Wrench,
-  X,
-} from "lucide-react";
+  Component,
+  type ComponentType,
+  type ErrorInfo,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { ChevronDown, ChevronRight, Command, Moon, Search, Sun, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import type { InstalledPlugin } from "@devbox/ipc-contracts";
 import { Kbd, StatusDot } from "@devbox/ui";
 
 import "./App.css";
-import { PluginManager, type PluginManagerSnapshot } from "./app/plugin-manager";
-import { SettingsView } from "./features/settings/SettingsView";
+import {
+  builtinFeatures,
+  featureCategories,
+  pluginIcons,
+  type BuiltinFeature,
+} from "./app/features";
+import { InstalledPluginPanel } from "./features/plugins/InstalledPluginPanel";
 import { PluginCenterView } from "./features/plugins/PluginCenterView";
 import { applyLocale } from "./i18n";
-import { coreAPI } from "./ipc/client";
-import { builtInPlugins } from "./plugins.generated";
+import { coreAPI, pluginAdminAPI } from "./ipc/client";
 import { useAppStore } from "./stores/app-store";
 
-const pluginManager = new PluginManager(builtInPlugins);
+type WorkspaceFeature = {
+  id: string;
+  title: string;
+  categoryId: string;
+  categoryTitle: string;
+  categoryOrder: number;
+  order: number;
+  icon: ComponentType<{ "aria-hidden"?: boolean | "true"; size?: number }>;
+  builtin?: BuiltinFeature;
+  plugin?: InstalledPlugin;
+  pluginViewId?: string;
+};
 
-class PluginErrorBoundary extends Component<
+class FeatureErrorBoundary extends Component<
   { children: ReactNode; fallback: string },
   { failed: boolean }
 > {
   state = { failed: false };
-
   static getDerivedStateFromError() {
     return { failed: true };
   }
-
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("插件界面渲染失败", error, info);
+    console.error("功能界面渲染失败", error, info);
   }
-
   render() {
-    if (this.state.failed) {
-      return <div className="error-state">{this.props.fallback}</div>;
-    }
-    return this.props.children;
+    return this.state.failed ? (
+      <div className="error-state">{this.props.fallback}</div>
+    ) : (
+      this.props.children
+    );
   }
 }
 
-function usePluginSnapshot(): PluginManagerSnapshot {
-  const [snapshot, setSnapshot] = useState(() => pluginManager.snapshot());
-  useEffect(() => pluginManager.subscribe(() => setSnapshot(pluginManager.snapshot())), []);
-  return snapshot;
+function pluginFeatureId(pluginId: string, viewId: string) {
+  return `plugin:${pluginId}:${viewId}`;
 }
 
-function CommandPalette({ snapshot }: { snapshot: PluginManagerSnapshot }) {
+function CommandPalette({ features }: { features: WorkspaceFeature[] }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
-  const setActiveViewId = useAppStore((state) => state.setActiveViewId);
+  const openTab = useAppStore((state) => state.openTab);
   const setOpen = useAppStore((state) => state.setPaletteOpen);
-  const items = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase();
-    return [
-      ...snapshot.views.map((view) => ({
-        id: `view:${view.id}`,
-        label: t(view.titleKey),
-        run: () => setActiveViewId(view.id),
-      })),
-      ...snapshot.commands.map((command) => ({
-        id: `command:${command.id}`,
-        label: t(command.titleKey),
-        run: command.run,
-      })),
-    ].filter((item) => item.label.toLocaleLowerCase().includes(normalized));
-  }, [query, setActiveViewId, snapshot, t]);
-
+  const items = features.filter((feature) =>
+    feature.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
+  );
   return (
     <div className="palette-backdrop" onMouseDown={() => setOpen(false)} role="presentation">
       <section
@@ -102,13 +98,13 @@ function CommandPalette({ snapshot }: { snapshot: PluginManagerSnapshot }) {
               <button
                 key={item.id}
                 onClick={() => {
-                  void item.run();
+                  openTab(item.id);
                   setOpen(false);
                 }}
                 type="button"
               >
                 <Command aria-hidden="true" size={16} />
-                {item.label}
+                {item.title}
               </button>
             ))
           ) : (
@@ -122,22 +118,27 @@ function CommandPalette({ snapshot }: { snapshot: PluginManagerSnapshot }) {
 
 function App() {
   const { t, i18n } = useTranslation();
-  const snapshot = usePluginSnapshot();
-  const activeViewId = useAppStore((state) => state.activeViewId);
-  const setActiveViewId = useAppStore((state) => state.setActiveViewId);
+  const activeTabId = useAppStore((state) => state.activeTabId);
+  const tabs = useAppStore((state) => state.tabs);
+  const closeTab = useAppStore((state) => state.closeTab);
+  const openTab = useAppStore((state) => state.openTab);
+  const reorderTab = useAppStore((state) => state.reorderTab);
   const paletteOpen = useAppStore((state) => state.paletteOpen);
   const setPaletteOpen = useAppStore((state) => state.setPaletteOpen);
   const theme = useAppStore((state) => state.theme);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLocale = useAppStore((state) => state.setLocale);
-  const activeView = snapshot.views.find((view) => view.id === activeViewId);
-  const toolsActive = activeViewId !== "settings" && activeViewId !== "plugin-center";
-  const activeCount = snapshot.states.filter((state) => state.status === "active").length;
+  const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
+  const [expanded, setExpanded] = useState(() => new Set(featureCategories.map((item) => item.id)));
+  const [draggedTab, setDraggedTab] = useState<string>();
 
   useEffect(() => {
-    void pluginManager.activateAll();
-    void Promise.all([coreAPI.settings.get("ui.locale"), coreAPI.settings.get("ui.theme")])
-      .then(async ([savedLocale, savedTheme]) => {
+    void Promise.all([
+      coreAPI.settings.get("ui.locale"),
+      coreAPI.settings.get("ui.theme"),
+      pluginAdminAPI.list(),
+    ])
+      .then(async ([savedLocale, savedTheme, installed]) => {
         const locale = savedLocale?.value;
         if (locale === "system" || locale === "zh-CN" || locale === "en-US") {
           setLocale(locale);
@@ -148,9 +149,76 @@ function App() {
           setTheme(nextTheme);
           document.documentElement.dataset.theme = nextTheme;
         }
+        setPlugins(installed);
       })
-      .catch((error: unknown) => console.error("读取应用设置失败", error));
+      .catch((error: unknown) => console.error("读取应用状态失败", error));
   }, [setLocale, setTheme]);
+
+  const features = useMemo<WorkspaceFeature[]>(() => {
+    const categoryById = new Map(featureCategories.map((category) => [category.id, category]));
+    const builtins = builtinFeatures.map((feature) => {
+      const category = categoryById.get(feature.categoryId)!;
+      return {
+        ...feature,
+        title: t(feature.titleKey),
+        categoryTitle: t(category.titleKey),
+        categoryOrder: category.order,
+        builtin: feature,
+      } satisfies WorkspaceFeature;
+    });
+    const pluginFeatures = plugins.flatMap((plugin) =>
+      plugin.enabled
+        ? plugin.manifest.contributes.views.map((view) => ({
+            id: pluginFeatureId(plugin.id, view.id),
+            title:
+              plugin.manifest.contributes.views.length === 1
+                ? plugin.name
+                : `${plugin.name} · ${view.id}`,
+            categoryId: view.category.id,
+            categoryTitle: view.category.title[i18n.language === "zh-CN" ? "zh-CN" : "en-US"],
+            categoryOrder: view.category.order,
+            order: view.order,
+            icon: pluginIcons[view.icon] ?? pluginIcons.plug!,
+            plugin,
+            pluginViewId: view.id,
+          }))
+        : [],
+    );
+    return [...builtins, ...pluginFeatures];
+  }, [i18n.language, plugins, t]);
+
+  const featureById = useMemo(
+    () => new Map(features.map((feature) => [feature.id, feature])),
+    [features],
+  );
+  const groups = useMemo(() => {
+    const result = new Map<
+      string,
+      { id: string; title: string; order: number; features: WorkspaceFeature[] }
+    >();
+    for (const feature of features) {
+      const group = result.get(feature.categoryId) ?? {
+        id: feature.categoryId,
+        title: feature.categoryTitle,
+        order: feature.categoryOrder,
+        features: [],
+      };
+      group.features.push(feature);
+      result.set(feature.categoryId, group);
+    }
+    return [...result.values()]
+      .sort((left, right) => left.order - right.order)
+      .map((group) => ({
+        ...group,
+        features: group.features.sort((left, right) => left.order - right.order),
+      }));
+  }, [features]);
+
+  useEffect(() => {
+    for (const tabId of tabs) {
+      if (!featureById.has(tabId)) closeTab(tabId);
+    }
+  }, [closeTab, featureById, tabs]);
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -158,13 +226,37 @@ function App() {
         event.preventDefault();
         setPaletteOpen(!useAppStore.getState().paletteOpen);
       }
-      if (event.key === "Escape") {
-        setPaletteOpen(false);
-      }
+      if (event.key === "Escape") setPaletteOpen(false);
     }
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [setPaletteOpen]);
+
+  function renderFeature(feature: WorkspaceFeature, active: boolean) {
+    if (feature.plugin && feature.pluginViewId) {
+      return (
+        <InstalledPluginPanel
+          active={active}
+          plugin={feature.plugin}
+          viewId={feature.pluginViewId}
+        />
+      );
+    }
+    if (feature.id === "plugin-center") {
+      return (
+        <PluginCenterView
+          plugins={plugins}
+          onPluginsChange={setPlugins}
+          onOpenPlugin={(plugin) => {
+            const view = plugin.manifest.contributes.views[0];
+            if (view) openTab(pluginFeatureId(plugin.id, view.id));
+          }}
+        />
+      );
+    }
+    const FeatureComponent = feature.builtin?.component as ComponentType | undefined;
+    return FeatureComponent ? <FeatureComponent /> : null;
+  }
 
   return (
     <main className="app-shell">
@@ -181,10 +273,6 @@ function App() {
           <span>{t("actions.search")}</span>
           <Kbd>⌘ K</Kbd>
         </button>
-        <span className="locale-indicator" title={i18n.language}>
-          <Languages aria-hidden="true" size={16} />
-          {i18n.language === "zh-CN" ? "中" : "EN"}
-        </span>
         {theme === "dark" ? (
           <Moon aria-hidden="true" size={16} />
         ) : (
@@ -193,70 +281,131 @@ function App() {
       </header>
 
       <div className="workbench">
-        <aside className="activity-rail" aria-label={t("navigation.tools")}>
-          <button
-            aria-label={t("navigation.tools")}
-            className={toolsActive ? "active" : ""}
-            onClick={() => setActiveViewId(snapshot.views[0]?.id ?? "foundation")}
-            type="button"
-          >
-            <Wrench aria-hidden="true" />
-          </button>
-          <button
-            aria-label={t("navigation.pluginCenter")}
-            className={activeViewId === "plugin-center" ? "active" : ""}
-            onClick={() => setActiveViewId("plugin-center")}
-            type="button"
-          >
-            <Blocks aria-hidden="true" />
-          </button>
-          <span className="rail-spacer" />
-          <button
-            aria-label={t("navigation.settings")}
-            className={activeViewId === "settings" ? "active" : ""}
-            onClick={() => setActiveViewId("settings")}
-            type="button"
-          >
-            <Settings aria-hidden="true" />
-          </button>
-        </aside>
-
-        <aside className="navigation-sidebar">
-          <p className="nav-section-title">
-            {t(activeViewId === "plugin-center" ? "navigation.pluginCenter" : "navigation.tools")}
-          </p>
-          {activeViewId === "plugin-center" ? (
-            <div className="sidebar-context-copy">{t("pluginCenter.sidebar")}</div>
-          ) : (
-            <nav>
-              {snapshot.views.map((view) => (
-                <button
-                  className={activeViewId === view.id ? "active" : ""}
-                  key={`${view.pluginId}:${view.id}`}
-                  onClick={() => setActiveViewId(view.id)}
-                  type="button"
-                >
-                  <Box aria-hidden="true" size={17} />
-                  {t(view.titleKey)}
-                </button>
-              ))}
-            </nav>
-          )}
+        <aside className="navigation-sidebar feature-tree">
+          <nav>
+            {groups.map((group) => {
+              const isExpanded = expanded.has(group.id);
+              return (
+                <section className="tree-group" key={group.id}>
+                  <button
+                    className="tree-category"
+                    onClick={() =>
+                      setExpanded((current) => {
+                        const next = new Set(current);
+                        if (next.has(group.id)) next.delete(group.id);
+                        else next.add(group.id);
+                        return next;
+                      })
+                    }
+                    type="button"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown aria-hidden="true" size={15} />
+                    ) : (
+                      <ChevronRight aria-hidden="true" size={15} />
+                    )}
+                    <span>{group.title}</span>
+                  </button>
+                  {isExpanded ? (
+                    <div className="tree-children">
+                      {group.features.map((feature) => {
+                        const Icon = feature.icon;
+                        return (
+                          <button
+                            className={activeTabId === feature.id ? "active" : ""}
+                            key={feature.id}
+                            onClick={() => openTab(feature.id)}
+                            type="button"
+                          >
+                            <Icon aria-hidden="true" size={16} />
+                            {feature.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </nav>
           <div className="sidebar-note">{t("status.milestone")}</div>
         </aside>
 
-        <section className="main-workspace">
-          {activeViewId === "settings" ? (
-            <SettingsView />
-          ) : activeViewId === "plugin-center" ? (
-            <PluginCenterView />
-          ) : activeView ? (
-            <PluginErrorBoundary fallback={t("errors.pluginRender")} key={activeView.id}>
-              <activeView.component />
-            </PluginErrorBoundary>
-          ) : (
-            <div className="loading-state">{t("status.ready")}</div>
-          )}
+        <section className="main-workspace tab-workspace">
+          <div className="workspace-tabs" role="tablist">
+            {tabs.map((tabId) => {
+              const feature = featureById.get(tabId);
+              if (!feature) return null;
+              const Icon = feature.icon;
+              return (
+                <button
+                  aria-selected={activeTabId === tabId}
+                  className={activeTabId === tabId ? "active" : ""}
+                  draggable
+                  key={tabId}
+                  onClick={() => openTab(tabId)}
+                  onDragStart={() => setDraggedTab(tabId)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (draggedTab) reorderTab(draggedTab, tabId);
+                    setDraggedTab(undefined);
+                  }}
+                  role="tab"
+                  type="button"
+                >
+                  <Icon aria-hidden="true" size={14} />
+                  <span>{feature.title}</span>
+                  <span
+                    aria-label={t("workspace.closeTab", { name: feature.title })}
+                    className="tab-close"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeTab(tabId);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeTab(tabId);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <X aria-hidden="true" size={13} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="workspace-content">
+            {tabs.length ? (
+              tabs.map((tabId) => {
+                const feature = featureById.get(tabId);
+                if (!feature) return null;
+                const active = activeTabId === tabId;
+                return (
+                  <div
+                    aria-hidden={!active}
+                    className="workspace-panel"
+                    hidden={!active}
+                    key={tabId}
+                    role="tabpanel"
+                  >
+                    <FeatureErrorBoundary fallback={t("errors.pluginRender")}>
+                      {renderFeature(feature, active)}
+                    </FeatureErrorBoundary>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="workspace-empty">
+                <Command aria-hidden="true" />
+                <h2>{t("workspace.emptyTitle")}</h2>
+                <p>{t("workspace.emptyDescription")}</p>
+              </div>
+            )}
+          </div>
         </section>
       </div>
 
@@ -264,11 +413,11 @@ function App() {
         <StatusDot />
         <span>{t("status.ready")}</span>
         <span className="status-separator" />
-        <span>{t("status.plugins", { count: activeCount })}</span>
+        <span>{t("status.plugins", { count: plugins.length })}</span>
         <span className="status-spacer" />
         <span>v0.1.0</span>
       </footer>
-      {paletteOpen ? <CommandPalette snapshot={snapshot} /> : null}
+      {paletteOpen ? <CommandPalette features={features} /> : null}
     </main>
   );
 }

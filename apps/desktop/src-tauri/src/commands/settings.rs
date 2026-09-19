@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::{State, WebviewWindow};
+use tauri::{State, Webview};
 
 use crate::{
     domain::DevBoxError,
@@ -37,7 +37,7 @@ pub struct SettingsUpdateResponse {
 
 #[tauri::command]
 pub fn settings_get(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<SettingsGetRequest>,
 ) -> Result<SettingsGetResponse, DevBoxError> {
@@ -54,7 +54,7 @@ pub fn settings_get(
 
 #[tauri::command]
 pub fn settings_update(
-    window: WebviewWindow,
+    window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<SettingsUpdateRequest>,
 ) -> Result<SettingsUpdateResponse, DevBoxError> {
@@ -80,7 +80,7 @@ pub fn settings_update(
 }
 
 fn validate_caller_permission<T>(
-    window: &WebviewWindow,
+    window: &Webview,
     state: &State<'_, AppState>,
     envelope: &CommandEnvelope<T>,
     permission: &str,
