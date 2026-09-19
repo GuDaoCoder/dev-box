@@ -70,6 +70,10 @@ function pluginFeatureId(pluginId: string, viewId: string) {
   return `plugin:${pluginId}:${viewId}`;
 }
 
+function workspaceDomId(prefix: string, featureId: string) {
+  return `${prefix}-${featureId.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
 function CommandPalette({ features }: { features: WorkspaceFeature[] }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -271,6 +275,44 @@ function App() {
     action();
   }
 
+  function focusTab(tabId: string | undefined) {
+    if (!tabId) return;
+    window.requestAnimationFrame(() => {
+      document.getElementById(workspaceDomId("workspace-tab", tabId))?.focus();
+    });
+  }
+
+  function closeTabAndRestoreFocus(tabId: string) {
+    const index = tabs.indexOf(tabId);
+    const remaining = tabs.filter((id) => id !== tabId);
+    closeTab(tabId);
+    focusTab(remaining[Math.min(index, remaining.length - 1)]);
+  }
+
+  function handleWorkspaceTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, tabId: string) {
+    const currentIndex = tabs.indexOf(tabId);
+    if (event.key === "Delete") {
+      event.preventDefault();
+      closeTabAndRestoreFocus(tabId);
+      return;
+    }
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : event.key === "ArrowRight"
+            ? (currentIndex + 1) % tabs.length
+            : (currentIndex - 1 + tabs.length) % tabs.length;
+    const nextTabId = tabs[nextIndex];
+    if (nextTabId) {
+      openTab(nextTabId);
+      focusTab(nextTabId);
+    }
+  }
+
   function handleTabMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
@@ -346,6 +388,8 @@ function App() {
               return (
                 <section className="tree-group" key={group.id}>
                   <button
+                    aria-controls={workspaceDomId("tree-group", group.id)}
+                    aria-expanded={isExpanded}
                     className="tree-category"
                     onClick={() =>
                       setExpanded((current) => {
@@ -365,7 +409,12 @@ function App() {
                     <span>{group.title}</span>
                   </button>
                   {isExpanded ? (
-                    <div className="tree-children">
+                    <div
+                      aria-label={group.title}
+                      className="tree-children"
+                      id={workspaceDomId("tree-group", group.id)}
+                      role="group"
+                    >
                       {group.features.map((feature) => {
                         const Icon = feature.icon;
                         return (
@@ -389,19 +438,17 @@ function App() {
           <div className="sidebar-note">{t("status.milestone")}</div>
         </aside>
 
-        <section className="main-workspace tab-workspace">
-          <div className="workspace-tabs" role="tablist">
+        <section aria-label={t("workspace.label")} className="main-workspace tab-workspace">
+          <div aria-label={t("workspace.openTabs")} className="workspace-tabs" role="tablist">
             {tabs.map((tabId) => {
               const feature = featureById.get(tabId);
               if (!feature) return null;
               const Icon = feature.icon;
               return (
-                <button
-                  aria-selected={activeTabId === tabId}
-                  className={activeTabId === tabId ? "active" : ""}
+                <div
+                  className={`workspace-tab${activeTabId === tabId ? " active" : ""}`}
                   draggable
                   key={tabId}
-                  onClick={() => openTab(tabId)}
                   onDragStart={() => setDraggedTab(tabId)}
                   onDragOver={(event) => event.preventDefault()}
                   onContextMenu={(event) => {
@@ -419,31 +466,34 @@ function App() {
                     if (draggedTab) reorderTab(draggedTab, tabId);
                     setDraggedTab(undefined);
                   }}
-                  role="tab"
-                  type="button"
                 >
-                  <Icon aria-hidden="true" size={14} />
-                  <span>{feature.title}</span>
-                  <span
+                  <button
+                    aria-controls={workspaceDomId("workspace-panel", tabId)}
+                    aria-selected={activeTabId === tabId}
+                    className="workspace-tab-button"
+                    id={workspaceDomId("workspace-tab", tabId)}
+                    onClick={() => openTab(tabId)}
+                    onKeyDown={(event) => handleWorkspaceTabKeyDown(event, tabId)}
+                    role="tab"
+                    tabIndex={activeTabId === tabId ? 0 : -1}
+                    type="button"
+                  >
+                    <Icon aria-hidden="true" size={14} />
+                    <span>{feature.title}</span>
+                  </button>
+                  <button
                     aria-label={t("workspace.closeTab", { name: feature.title })}
                     className="tab-close"
                     onClick={(event) => {
                       event.stopPropagation();
-                      closeTab(tabId);
+                      closeTabAndRestoreFocus(tabId);
                     }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        closeTab(tabId);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
+                    tabIndex={activeTabId === tabId ? 0 : -1}
+                    type="button"
                   >
                     <X aria-hidden="true" size={13} />
-                  </span>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -495,8 +545,10 @@ function App() {
                 return (
                   <div
                     aria-hidden={!active}
+                    aria-labelledby={workspaceDomId("workspace-tab", tabId)}
                     className="workspace-panel"
                     hidden={!active}
+                    id={workspaceDomId("workspace-panel", tabId)}
                     key={tabId}
                     role="tabpanel"
                   >

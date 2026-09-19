@@ -43,6 +43,36 @@ describe("App", () => {
     expect(screen.getAllByRole("tab")).toHaveLength(1);
   });
 
+  it("支持使用方向键切换标签并用 Delete 关闭", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+    fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
+
+    const timestampTab = screen.getByRole("tab", { name: "Timestamp Tool" });
+    timestampTab.focus();
+    fireEvent.keyDown(timestampTab, { key: "ArrowLeft" });
+
+    expect(screen.getByRole("tab", { name: "JSON Tool" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "JSON Tool" }), { key: "Delete" });
+    expect(screen.queryByRole("tab", { name: "JSON Tool" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Timestamp Tool" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("为功能树和工作区建立可访问关系", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+
+    const category = screen.getByRole("button", { name: "Data" });
+    const tab = screen.getByRole("tab", { name: "JSON Tool" });
+    expect(category).toHaveAttribute("aria-expanded", "true");
+    expect(category).toHaveAttribute("aria-controls");
+    expect(tab).toHaveAttribute("aria-controls");
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", tab.id);
+  });
+
   it("右键标签显示批量关闭菜单", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "JSON Tool" });

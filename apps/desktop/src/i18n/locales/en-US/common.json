@@ -34,6 +34,8 @@
     "empty": "No matching command"
   },
   "workspace": {
+    "label": "Feature workspace",
+    "openTabs": "Open features",
     "emptyTitle": "No feature is open",
     "emptyDescription": "Choose a feature from the tree on the left.",
     "closeTab": "Close {{name}}",

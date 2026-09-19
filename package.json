@@ -23,8 +23,12 @@
     "fixtures:m2": "node scripts/build-m2-fixtures.mjs",
     "sdk:pack": "pnpm --filter @devbox/ipc-contracts --filter @devbox/plugin-sdk --filter @devbox/ui --filter @devbox/plugin-pack pack",
     "locales:check": "node scripts/check-locales.mjs",
+    "security:check": "node scripts/check-security-config.mjs",
+    "accessibility:check": "node scripts/check-color-contrast.mjs",
+    "performance:check": "node scripts/check-bundle-size.mjs",
     "version:check": "node scripts/check-version.mjs",
-    "check": "pnpm version:check && pnpm plugins:check && pnpm locales:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit"
+    "check": "pnpm version:check && pnpm plugins:check && pnpm locales:check && pnpm security:check && pnpm accessibility:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit",
+    "check:release": "pnpm check && pnpm build && pnpm performance:check && cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --workspace"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

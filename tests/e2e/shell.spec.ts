@@ -30,3 +30,35 @@ test("使用多标签打开工具并进入本地插件管理", async ({ page }) 
   await expect(page.getByRole("tab", { name: /Add ZIP Plugin/ })).toBeVisible();
   await expect(page.getByRole("tab", { name: /Online/ })).toHaveCount(0);
 });
+
+test("使用键盘切换标签并在设置中切换语言", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Timestamp Tool" }).click();
+  const timestampTab = page.getByRole("tab", { name: "Timestamp Tool" });
+  await timestampTab.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByRole("tab", { name: "JSON Tool" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("combobox", { name: "Language" }).selectOption("zh-CN");
+  await expect(page.getByRole("heading", { name: "设置" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "数据处理" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+});
+
+test("首屏和标签切换不超过冒烟性能上限", async ({ page }) => {
+  const navigationStarted = Date.now();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "JSON Tool" })).toBeVisible();
+  expect(Date.now() - navigationStarted).toBeLessThan(15_000);
+
+  const switchStarted = Date.now();
+  await page.getByRole("button", { name: "Encoding Tool" }).click();
+  await expect(page.getByRole("heading", { name: "Encoding Tool" })).toBeVisible();
+  expect(Date.now() - switchStarted).toBeLessThan(3_000);
+});

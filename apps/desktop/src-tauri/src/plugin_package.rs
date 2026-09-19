@@ -359,6 +359,17 @@ pub(crate) mod tests {
         archive.finish().expect("应完成未签名测试包");
     }
 
+    fn write_raw_archive(path: &Path, entries: &[(&str, &[u8])], compression: CompressionMethod) {
+        let archive_file = File::create(path).expect("应创建原始测试包");
+        let mut archive = ZipWriter::new(archive_file);
+        let options = SimpleFileOptions::default().compression_method(compression);
+        for (name, content) in entries {
+            archive.start_file(*name, options).expect("应写入文件头");
+            archive.write_all(content).expect("应写入文件");
+        }
+        archive.finish().expect("应完成原始测试包");
+    }
+
     fn write_test_package_with_engine(path: &Path, version: &str, devbox_engine: &str) {
         let permissions = if version == "1.0.0" {
             json!(["storage:read"])
@@ -492,6 +503,106 @@ pub(crate) mod tests {
         assert!(
             inspect_package(&archive_path, Some(&publisher), &PackagePolicy::default(),).is_err()
         );
+        let _ = std::fs::remove_file(archive_path);
+    }
+
+    #[test]
+    fn 拒绝路径穿越和重复文件() {
+        let traversal_path =
+            std::env::temp_dir().join(format!("devbox-unsafe-path-{}.zip", Uuid::new_v4()));
+        write_raw_archive(
+            &traversal_path,
+            &[("../escape.html", b"escape")],
+            CompressionMethod::Stored,
+        );
+        assert!(inspect_package(&traversal_path, None, &PackagePolicy::default()).is_err());
+        let _ = std::fs::remove_file(traversal_path);
+
+        let duplicate_path =
+            std::env::temp_dir().join(format!("devbox-duplicate-path-{}.zip", Uuid::new_v4()));
+        write_raw_archive(
+            &duplicate_path,
+            &[("plugin-a.json", b"{}"), ("plugin-b.json", b"{}")],
+            CompressionMethod::Stored,
+        );
+        let mut archive = std::fs::read(&duplicate_path).expect("应读取重复路径测试包");
+        let original = b"plugin-b.json";
+        let replacement = b"plugin-a.json";
+        for offset in 0..=archive.len() - original.len() {
+            if &archive[offset..offset + original.len()] == original {
+                archive[offset..offset + replacement.len()].copy_from_slice(replacement);
+            }
+        }
+        std::fs::write(&duplicate_path, archive).expect("应写入重复路径测试包");
+        assert!(inspect_package(&duplicate_path, None, &PackagePolicy::default()).is_err());
+        let _ = std::fs::remove_file(duplicate_path);
+    }
+
+    #[test]
+    fn 拒绝文件数量和压缩比超限() {
+        let file_count_path =
+            std::env::temp_dir().join(format!("devbox-file-count-{}.zip", Uuid::new_v4()));
+        write_raw_archive(
+            &file_count_path,
+            &[("first.txt", b"1"), ("second.txt", b"2")],
+            CompressionMethod::Stored,
+        );
+        let file_count_policy = PackagePolicy {
+            max_files: 1,
+            ..PackagePolicy::default()
+        };
+        assert!(inspect_package(&file_count_path, None, &file_count_policy).is_err());
+        let _ = std::fs::remove_file(file_count_path);
+
+        let compression_path =
+            std::env::temp_dir().join(format!("devbox-compression-{}.zip", Uuid::new_v4()));
+        let compressible = vec![0_u8; 16 * 1024];
+        write_raw_archive(
+            &compression_path,
+            &[("payload.bin", compressible.as_slice())],
+            CompressionMethod::Deflated,
+        );
+        let compression_policy = PackagePolicy {
+            max_compression_ratio: 2,
+            ..PackagePolicy::default()
+        };
+        assert!(inspect_package(&compression_path, None, &compression_policy).is_err());
+        let _ = std::fs::remove_file(compression_path);
+    }
+
+    #[test]
+    fn 拒绝不完整的签名元数据() {
+        let archive_path = std::env::temp_dir().join(format!(
+            "devbox-incomplete-signature-{}.zip",
+            Uuid::new_v4()
+        ));
+        let manifest = serde_json::to_vec(&json!({
+            "schemaVersion": 1,
+            "id": "devbox.incomplete-signature",
+            "name": "Incomplete Signature",
+            "version": "1.0.0",
+            "publisher": { "id": "local-author", "name": "Local Author" },
+            "engines": { "devbox": ">=0.1.0, <0.2.0", "pluginApi": "^1.0.0" },
+            "type": "ui",
+            "entry": { "main": "dist/index.html" },
+            "activationEvents": [],
+            "permissions": [],
+            "locales": {},
+            "contributes": { "views": [] }
+        }))
+        .expect("应序列化清单");
+        write_raw_archive(
+            &archive_path,
+            &[
+                ("plugin.json", manifest.as_slice()),
+                ("dist/index.html", b"<!doctype html>"),
+                ("checksums.json", b"{}"),
+            ],
+            CompressionMethod::Stored,
+        );
+        let error = inspect_package(&archive_path, None, &PackagePolicy::default())
+            .expect_err("签名元数据不完整时应拒绝安装");
+        assert_eq!(error, "插件签名文件不完整");
         let _ = std::fs::remove_file(archive_path);
     }
 }

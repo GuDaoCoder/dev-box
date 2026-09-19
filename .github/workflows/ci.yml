@@ -30,9 +30,11 @@ jobs:
           components: rustfmt, clippy
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: apps/desktop/src-tauri -> target
+          workspaces: . -> target
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - run: pnpm build
+      - run: pnpm performance:check
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace
@@ -63,7 +65,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: apps/desktop/src-tauri -> target
+          workspaces: . -> target
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm tauri build --no-bundle

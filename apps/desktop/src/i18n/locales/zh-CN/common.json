@@ -34,6 +34,8 @@
     "empty": "没有匹配的命令"
   },
   "workspace": {
+    "label": "功能工作区",
+    "openTabs": "已打开功能",
     "emptyTitle": "尚未打开功能",
     "emptyDescription": "从左侧功能树选择一个功能开始使用。",
     "closeTab": "关闭 {{name}}",
