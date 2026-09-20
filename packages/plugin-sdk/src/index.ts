@@ -117,6 +117,7 @@ export interface InstalledPluginHostContext {
   readonly pluginId: string;
   readonly version: string;
   readonly permissions: readonly PluginPermission[];
+  readonly locale: SupportedLocale;
 }
 
 export interface InstalledPluginBridge extends PluginAPI {

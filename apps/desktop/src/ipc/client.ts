@@ -181,10 +181,11 @@ export const pluginAdminAPI = {
     pluginId: string,
     viewId: string,
     bounds: { x: number; y: number; width: number; height: number },
+    locale: "zh-CN" | "en-US",
   ) {
     return invokeHost<{ label: string }>(
       "plugin_open",
-      createEnvelope(CORE_PLUGIN_ID, { pluginId, viewId, bounds }),
+      createEnvelope(CORE_PLUGIN_ID, { pluginId, viewId, bounds, locale }),
     );
   },
   async setViewVisible(pluginId: string, viewId: string, visible: boolean) {

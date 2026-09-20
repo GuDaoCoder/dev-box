@@ -21,6 +21,10 @@ assert.ok(
   mainCapability.permissions.includes("dialog:allow-open"),
   "只有主 WebView 需要文件选择权限",
 );
+assert.ok(
+  mainCapability.permissions.includes("dialog:allow-confirm"),
+  "只有主 WebView 需要危险操作确认权限",
+);
 assert.deepEqual(
   pluginCapability.webviews,
   ["plugin-*"],

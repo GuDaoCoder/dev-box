@@ -177,6 +177,35 @@ async function collectFiles(root, relative = "") {
   return files;
 }
 
+async function collectValidatedEntries(source) {
+  const filePaths = await collectFiles(source);
+  if (!filePaths.includes("plugin.json")) throw new Error("插件目录缺少 plugin.json");
+  if (filePaths.length > packagePolicy.maxFiles - 2) throw new Error("插件文件数量超过限制");
+  const entries = [];
+  let expanded = 0;
+  for (const filePath of filePaths) {
+    if (!isSafePackagePath(filePath)) throw new Error(`插件路径无效：${filePath}`);
+    const data = await readFile(path.join(source, filePath));
+    if (data.length > packagePolicy.maxFileBytes)
+      throw new Error(`插件文件超过大小限制：${filePath}`);
+    expanded += data.length;
+    entries.push({ path: filePath, data });
+  }
+  if (expanded > packagePolicy.maxExpandedBytes) throw new Error("插件目录超过展开大小限制");
+  const manifest = validateManifest(
+    JSON.parse(entries.find((entry) => entry.path === "plugin.json").data),
+  );
+  if (manifest.type !== "ui") throw new Error("运行时安装包只允许 ui 插件");
+  if (!entries.some((entry) => entry.path === manifest.entry.main))
+    throw new Error("插件入口文件不存在");
+  for (const localePath of Object.values(manifest.locales)) {
+    if (!entries.some((entry) => entry.path === localePath)) {
+      throw new Error(`插件语言资源不存在：${localePath}`);
+    }
+  }
+  return { entries, manifest };
+}
+
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
 }
@@ -285,31 +314,7 @@ export function readZip(archive) {
 }
 
 export async function packPlugin({ source, output, privateKey, keyId }) {
-  const filePaths = await collectFiles(source);
-  if (!filePaths.includes("plugin.json")) throw new Error("插件目录缺少 plugin.json");
-  if (filePaths.length > packagePolicy.maxFiles - 2) throw new Error("插件文件数量超过限制");
-  const entries = [];
-  let expanded = 0;
-  for (const filePath of filePaths) {
-    if (!isSafePackagePath(filePath)) throw new Error(`插件路径无效：${filePath}`);
-    const data = await readFile(path.join(source, filePath));
-    if (data.length > packagePolicy.maxFileBytes)
-      throw new Error(`插件文件超过大小限制：${filePath}`);
-    expanded += data.length;
-    entries.push({ path: filePath, data });
-  }
-  if (expanded > packagePolicy.maxExpandedBytes) throw new Error("插件目录超过展开大小限制");
-  const manifest = validateManifest(
-    JSON.parse(entries.find((entry) => entry.path === "plugin.json").data),
-  );
-  if (manifest.type !== "ui") throw new Error("运行时安装包只允许 ui 插件");
-  if (!entries.some((entry) => entry.path === manifest.entry.main))
-    throw new Error("插件入口文件不存在");
-  for (const localePath of Object.values(manifest.locales)) {
-    if (!entries.some((entry) => entry.path === localePath)) {
-      throw new Error(`插件语言资源不存在：${localePath}`);
-    }
-  }
+  const { entries, manifest } = await collectValidatedEntries(source);
   if (!manifest.publisher.keyId || manifest.publisher.keyId !== keyId) {
     throw new Error("签名 keyId 与 manifest 不一致");
   }
@@ -333,6 +338,15 @@ export async function packPlugin({ source, output, privateKey, keyId }) {
     { path: "checksums.json", data: checksums },
     { path: "signature.json", data: signatureFile },
   ]);
+  if (archive.length > packagePolicy.maxArchiveBytes) throw new Error("插件包超过归档大小限制");
+  await mkdir(path.dirname(output), { recursive: true });
+  await writeFile(output, archive);
+  return { manifest, archiveSha256: sha256(archive), size: archive.length };
+}
+
+export async function packUnsignedPlugin({ source, output }) {
+  const { entries, manifest } = await collectValidatedEntries(source);
+  const archive = createZip(entries);
   if (archive.length > packagePolicy.maxArchiveBytes) throw new Error("插件包超过归档大小限制");
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, archive);

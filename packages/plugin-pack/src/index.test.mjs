@@ -5,7 +5,13 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { packPlugin, validateManifest, verifyPluginArchive } from "./index.mjs";
+import {
+  packPlugin,
+  packUnsignedPlugin,
+  readZip,
+  validateManifest,
+  verifyPluginArchive,
+} from "./index.mjs";
 
 async function createFixture() {
   const directory = await mkdtemp(path.join(tmpdir(), "devbox-plugin-pack-"));
@@ -69,6 +75,22 @@ describe("plugin-pack", () => {
     archive[marker] ^= 1;
 
     await expect(verifyPluginArchive({ archive, publicKey })).rejects.toThrow("校验失败");
+  });
+
+  it("生成内容稳定的未签名插件包", async () => {
+    const source = await createFixture();
+    const firstOutput = path.join(tmpdir(), `devbox-unsigned-first-${process.pid}.zip`);
+    const secondOutput = path.join(tmpdir(), `devbox-unsigned-second-${process.pid}.zip`);
+    const first = await packUnsignedPlugin({ source, output: firstOutput });
+    const second = await packUnsignedPlugin({ source, output: secondOutput });
+    const firstArchive = await readFile(firstOutput);
+    const secondArchive = await readFile(secondOutput);
+    const entries = readZip(firstArchive);
+
+    expect(first.archiveSha256).toBe(second.archiveSha256);
+    expect(firstArchive.equals(secondArchive)).toBe(true);
+    expect(entries.has("plugin.json")).toBe(true);
+    expect(entries.has("signature.json")).toBe(false);
   });
 
   it("拒绝清单中的未知嵌套字段", () => {

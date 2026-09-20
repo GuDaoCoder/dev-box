@@ -57,6 +57,10 @@ ZIP 根目录必须直接包含 `plugin.json`，不能再套一层项目目录�
 
 `java:execute` 用于通过系统 JDK 17+ 的 JShell 执行 Java 代码片段。调用必须由一次近期真实用户操作触发；Host 限制单次输入为 64 KiB、最长 5 秒、输出最多 256 KiB，并且同一插件同时只能运行一个片段。该能力不是操作系统沙箱，代码仍以当前用户权限运行，可能访问本机文件、网络或启动其他进程。插件必须在运行前向用户说明风险，且不能把它描述为安全沙箱。
 
+## 跟随平台语言
+
+插件从 `window.__DEVBOX_PLUGIN__.locale` 读取 DevBox 当前语言，取值为 `zh-CN` 或 `en-US`。用户在设置中切换语言后，Host 会向已打开的插件视图派发 `devbox:locale-change` 事件，新语言位于 `CustomEvent.detail`。插件应同时处理初始值和运行时事件，不要自行提供另一套语言切换入口。
+
 ## 校验和打包
 
 在 DevBox 仓库中校验目录：
@@ -66,6 +70,14 @@ node packages/plugin-pack/src/cli.mjs validate ./my-plugin
 ```
 
 未签名插件可用标准 ZIP 工具打包，确保压缩包根目录是 `plugin.json`、`dist/` 和可选的 `locales/`。DevBox 会允许安装，但始终显示未签名警告。
+
+也可以使用 DevBox 打包器生成内容可重复的未签名 ZIP：
+
+```sh
+node packages/plugin-pack/src/cli.mjs pack ./my-plugin \
+  --output ./my-plugin-1.0.0.zip \
+  --unsigned
+```
 
 正式分发建议使用 Ed25519 签名包。先把公钥对应的 `keyId` 写入 `publisher.keyId`，再执行：
 

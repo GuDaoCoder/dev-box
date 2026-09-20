@@ -57,6 +57,10 @@ Every view declares a category, bilingual category titles, a feature order, and 
 
 `java:execute` runs Java snippets through JShell from a system JDK 17 or newer. Calls require a recent trusted user gesture. The Host limits each request to 64 KiB of source, 5 seconds of execution, and 256 KiB of output, with at most one active run per plugin. This capability is not an operating-system sandbox: code runs with the current user's privileges and may access local files, the network, or other processes. A plugin must explain this risk before execution and must not present the capability as a secure sandbox.
 
+## Follow the platform language
+
+Read the current DevBox language from `window.__DEVBOX_PLUGIN__.locale`; its value is `zh-CN` or `en-US`. When the user changes the language in Settings, the Host dispatches a `devbox:locale-change` event to every open plugin view and places the new locale in `CustomEvent.detail`. Handle both the initial value and the runtime event instead of adding a separate language switch inside the plugin.
+
 ## Validate and package
 
 Validate a source directory from the DevBox repository:
@@ -66,6 +70,14 @@ node packages/plugin-pack/src/cli.mjs validate ./my-plugin
 ```
 
 An unsigned plugin may be created with a standard ZIP tool, provided the root contains `plugin.json`, `dist/`, and optional `locales/`. DevBox allows installation but keeps an unsigned warning visible.
+
+The DevBox packager can also generate a deterministic unsigned ZIP:
+
+```sh
+node packages/plugin-pack/src/cli.mjs pack ./my-plugin \
+  --output ./my-plugin-1.0.0.zip \
+  --unsigned
+```
 
 For distribution, prefer an Ed25519-signed package. Add the public key's `keyId` to `publisher.keyId`, then run:
 

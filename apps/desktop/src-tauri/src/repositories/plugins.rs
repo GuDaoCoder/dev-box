@@ -50,6 +50,9 @@ impl PluginRepository {
     fn initialize(connection: Connection) -> rusqlite::Result<Self> {
         connection.execute_batch(include_str!("../../migrations/0001_initial.sql"))?;
         connection.execute_batch(include_str!("../../migrations/0002_plugins.sql"))?;
+        connection.execute_batch(include_str!(
+            "../../migrations/0003_remove_retired_builtin_plugins.sql"
+        ))?;
         Ok(Self {
             connection: Mutex::new(connection),
         })
@@ -586,7 +589,9 @@ fn record_event(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::{collections::BTreeMap, fs};
+
+    use uuid::Uuid;
 
     use super::*;
     use crate::domain::PluginManifest;
@@ -666,5 +671,64 @@ mod tests {
             repository.list("test").expect("应读取插件")[0].current_version,
             "1.0.0"
         );
+    }
+
+    #[test]
+    fn 启动迁移会移除已内置功能的旧插件记录() {
+        let root = std::env::temp_dir().join(format!("devbox-plugin-migration-{}", Uuid::new_v4()));
+        fs::create_dir_all(&root).expect("应创建测试目录");
+        let database_path = root.join("devbox.db");
+        drop(PluginRepository::open(&database_path).expect("应初始化数据库"));
+
+        let connection = Connection::open(&database_path).expect("应打开数据库");
+        connection
+            .execute(
+                "INSERT INTO publishers
+                   (publisher_id, name, key_id, public_key_pem, trusted)
+                 VALUES ('legacy-devbox', 'Legacy DevBox', 'legacy-key', '', 0)",
+                [],
+            )
+            .expect("应写入旧发布者");
+        connection
+            .execute(
+                "INSERT INTO plugins
+                   (plugin_id, name, publisher_id, current_version, status, source)
+                 VALUES ('devbox.official.json-tool', 'JSON Tool', 'legacy-devbox', '1.0.0',
+                         'installed', 'development')",
+                [],
+            )
+            .expect("应写入旧插件");
+        connection
+            .execute(
+                "INSERT INTO plugin_versions
+                   (plugin_id, version, manifest_json, install_path, archive_sha256,
+                    signature_status, source)
+                 VALUES ('devbox.official.json-tool', '1.0.0', '{}', '/tmp/legacy', 'abc',
+                         'unsigned-development', 'development')",
+                [],
+            )
+            .expect("应写入旧版本");
+        connection
+            .execute(
+                "INSERT INTO settings (plugin_id, setting_key, value_json, revision)
+                 VALUES ('devbox.official.json-tool', 'legacy', 'true', 1)",
+                [],
+            )
+            .expect("应写入旧设置");
+        drop(connection);
+
+        let repository = PluginRepository::open(&database_path).expect("迁移应成功");
+        assert!(repository.list("migration").expect("应读取插件").is_empty());
+        drop(repository);
+        let connection = Connection::open(&database_path).expect("应重新打开数据库");
+        let settings: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM settings WHERE plugin_id = 'devbox.official.json-tool'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("应统计旧设置");
+        assert_eq!(settings, 0);
+        fs::remove_dir_all(root).expect("应清理测试目录");
     }
 }

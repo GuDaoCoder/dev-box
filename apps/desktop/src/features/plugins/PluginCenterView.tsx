@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
+import { confirm, open } from "@tauri-apps/plugin-dialog";
 import {
   BadgeCheck,
   CircleAlert,
@@ -27,9 +27,21 @@ export interface PluginCenterViewProps {
 }
 
 function errorMessage(error: unknown): string {
-  if (error && typeof error === "object" && "details" in error) {
-    const details = (error as { details?: { reason?: unknown } }).details;
+  if (error && typeof error === "object") {
+    const structured = error as {
+      code?: unknown;
+      message?: unknown;
+      messageKey?: unknown;
+      details?: { field?: unknown; reason?: unknown };
+    };
+    const details = structured.details;
     if (typeof details?.reason === "string") return details.reason;
+    if (typeof details?.field === "string" && typeof structured.code === "string") {
+      return `${structured.code}: ${details.field}`;
+    }
+    if (typeof structured.message === "string") return structured.message;
+    if (typeof structured.messageKey === "string") return structured.messageKey;
+    if (typeof structured.code === "string") return structured.code;
   }
   return error instanceof Error ? error.message : String(error);
 }
@@ -93,8 +105,18 @@ export function PluginCenterView({
   }
 
   async function uninstallPlugin(plugin: InstalledPlugin) {
-    if (!window.confirm(t("pluginCenter.confirmUninstall.plugin", { name: plugin.name }))) return;
-    const deleteData = window.confirm(t("pluginCenter.confirmUninstall.data"));
+    const approved = await confirm(
+      t("pluginCenter.confirmUninstall.plugin", { name: plugin.name }),
+      {
+        title: "DevBox",
+        kind: "warning",
+      },
+    );
+    if (!approved) return;
+    const deleteData = await confirm(t("pluginCenter.confirmUninstall.data"), {
+      title: "DevBox",
+      kind: "warning",
+    });
     applyPlugins(await pluginAdminAPI.uninstall(plugin.id, deleteData));
   }
 

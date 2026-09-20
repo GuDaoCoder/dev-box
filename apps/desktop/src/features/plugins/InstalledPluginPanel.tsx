@@ -15,7 +15,7 @@ export function InstalledPluginPanel({
   plugin: InstalledPlugin;
   viewId: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>();
 
@@ -34,12 +34,17 @@ export function InstalledPluginPanel({
       const bounds = target.getBoundingClientRect();
       if (bounds.width < 1 || bounds.height < 1) return;
       try {
-        await pluginAdminAPI.open(plugin.id, viewId, {
-          x: bounds.x,
-          y: bounds.y,
-          width: bounds.width,
-          height: bounds.height,
-        });
+        await pluginAdminAPI.open(
+          plugin.id,
+          viewId,
+          {
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+          },
+          i18n.language === "zh-CN" ? "zh-CN" : "en-US",
+        );
         if (!cancelled) setError(undefined);
       } catch (nextError) {
         if (!cancelled)
@@ -58,7 +63,7 @@ export function InstalledPluginPanel({
       window.removeEventListener("resize", handleResize);
       void pluginAdminAPI.setViewVisible(plugin.id, viewId, false).catch(() => undefined);
     };
-  }, [active, plugin.id, viewId]);
+  }, [active, i18n.language, plugin.id, viewId]);
 
   useEffect(
     () => () => {
