@@ -55,7 +55,7 @@ ZIP 根目录必须直接包含 `plugin.json`，不能再套一层项目目录�
 
 每个视图都必须配置分类、分类中英文标题、功能顺序和图标。可用图标为 `binary`、`box`、`braces`、`clock`、`code`、`fingerprint`、`plug`。可申请的权限为 `storage:read`、`storage:write`、`clipboard:read`、`clipboard:write`、`java:execute`。
 
-`java:execute` 用于通过系统 JDK 17+ 的 JShell 执行 Java 代码片段。调用必须由一次近期真实用户操作触发；Host 限制单次输入为 64 KiB、最长 5 秒、输出最多 256 KiB，并且同一插件同时只能运行一个片段。该能力不是操作系统沙箱，代码仍以当前用户权限运行，可能访问本机文件、网络或启动其他进程。插件必须在运行前向用户说明风险，且不能把它描述为安全沙箱。
+`java:execute` 用于通过系统 JDK 11+ 的 JShell 执行 Java 代码片段。调用必须由一次近期真实用户操作触发；Host 限制单次输入为 64 KiB、最长 5 秒、输出最多 256 KiB，并且同一插件同时只能运行一个片段。该能力不是操作系统沙箱，代码仍以当前用户权限运行，可能访问本机文件、网络或启动其他进程。插件必须在运行前向用户说明风险，且不能把它描述为安全沙箱。插件可从 `window.__DEVBOX_PLUGIN__.java` 读取宿主检测到的版本；实际可用语法和标准库由该版本决定。
 
 ## 跟随平台语言
 

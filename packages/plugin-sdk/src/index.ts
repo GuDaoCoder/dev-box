@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 
 import type {
   CorePingResponse,
+  JavaEnvironment,
   JavaExecutionRequest,
   JavaExecutionResult,
   JsonValue,
@@ -118,6 +119,7 @@ export interface InstalledPluginHostContext {
   readonly version: string;
   readonly permissions: readonly PluginPermission[];
   readonly locale: SupportedLocale;
+  readonly java: JavaEnvironment | null;
 }
 
 export interface InstalledPluginBridge extends PluginAPI {

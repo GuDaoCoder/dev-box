@@ -75,6 +75,11 @@ export interface JavaExecutionRequest {
   maxOutputBytes: number;
 }
 
+export interface JavaEnvironment {
+  version: string;
+  majorVersion: number;
+}
+
 export interface JavaExecutionResult {
   status: "success" | "error" | "timeout";
   stdout: string;

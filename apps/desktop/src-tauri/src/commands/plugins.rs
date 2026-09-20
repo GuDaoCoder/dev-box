@@ -583,12 +583,19 @@ pub async fn plugin_open(
     .parse()
     .map_err(|_| DevBoxError::internal(envelope.request_id(), "插件入口 URL 无效"))?;
     let allowed_plugin = plugin.id.clone();
+    let java_environment = plugin
+        .granted_permissions
+        .iter()
+        .any(|permission| permission == "java:execute")
+        .then(|| state.java_runner.environment().ok())
+        .flatten();
     let context = serde_json::json!({
         "apiVersion": crate::plugin_package::PLUGIN_API_VERSION,
         "pluginId": plugin.id,
         "version": plugin.current_version,
         "permissions": plugin.granted_permissions,
-        "locale": envelope.payload.locale.as_str()
+        "locale": envelope.payload.locale.as_str(),
+        "java": java_environment
     })
     .to_string();
     let initialization_script = [

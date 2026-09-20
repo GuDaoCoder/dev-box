@@ -55,7 +55,7 @@ my-plugin/
 
 Every view declares a category, bilingual category titles, a feature order, and an icon. Supported icons are `binary`, `box`, `braces`, `clock`, `code`, `fingerprint`, and `plug`. Available permissions are `storage:read`, `storage:write`, `clipboard:read`, `clipboard:write`, and `java:execute`.
 
-`java:execute` runs Java snippets through JShell from a system JDK 17 or newer. Calls require a recent trusted user gesture. The Host limits each request to 64 KiB of source, 5 seconds of execution, and 256 KiB of output, with at most one active run per plugin. This capability is not an operating-system sandbox: code runs with the current user's privileges and may access local files, the network, or other processes. A plugin must explain this risk before execution and must not present the capability as a secure sandbox.
+`java:execute` runs Java snippets through JShell from a system JDK 11 or newer. Calls require a recent trusted user gesture. The Host limits each request to 64 KiB of source, 5 seconds of execution, and 256 KiB of output, with at most one active run per plugin. This capability is not an operating-system sandbox: code runs with the current user's privileges and may access local files, the network, or other processes. A plugin must explain this risk before execution and must not present the capability as a secure sandbox. Read the detected runtime from `window.__DEVBOX_PLUGIN__.java`; available syntax and standard-library APIs depend on that version.
 
 ## Follow the platform language
 

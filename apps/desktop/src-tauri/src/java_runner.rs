@@ -16,6 +16,20 @@ use wait_timeout::ChildExt;
 pub const MAX_SOURCE_BYTES: usize = 64 * 1024;
 pub const MAX_TIMEOUT_MS: u64 = 5_000;
 pub const MAX_OUTPUT_BYTES: usize = 256 * 1024;
+pub const MIN_JDK_MAJOR_VERSION: u32 = 11;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JavaEnvironment {
+    pub version: String,
+    pub major_version: u32,
+}
+
+#[derive(Clone)]
+struct ResolvedJshell {
+    executable: PathBuf,
+    environment: JavaEnvironment,
+}
 
 pub fn validate_request(
     source: &str,
@@ -53,7 +67,7 @@ pub struct JavaExecutionResult {
 
 pub struct JavaRunnerService {
     active_plugins: Mutex<HashSet<String>>,
-    jshell: OnceLock<Result<PathBuf, String>>,
+    jshell: OnceLock<Result<ResolvedJshell, String>>,
 }
 
 impl Default for JavaRunnerService {
@@ -79,6 +93,10 @@ impl Drop for JavaRunPermit {
 }
 
 impl JavaRunnerService {
+    pub fn environment(&self) -> Result<JavaEnvironment, String> {
+        Ok(self.jshell.get_or_init(resolve_jshell).clone()?.environment)
+    }
+
     pub fn acquire(self: &Arc<Self>, plugin_id: &str) -> Result<JavaRunPermit, String> {
         let mut active = self
             .active_plugins
@@ -99,7 +117,7 @@ impl JavaRunnerService {
         timeout_ms: u64,
         max_output_bytes: usize,
     ) -> Result<JavaExecutionResult, String> {
-        let executable = self.jshell.get_or_init(resolve_jshell).clone()?;
+        let executable = self.jshell.get_or_init(resolve_jshell).clone()?.executable;
         let working_directory = env::temp_dir().join(format!("devbox-java-{}", Uuid::new_v4()));
         fs::create_dir(&working_directory).map_err(|error| error.to_string())?;
         let result = run_jshell(
@@ -132,33 +150,39 @@ fn discover_jshell() -> PathBuf {
     })
 }
 
-fn resolve_jshell() -> Result<PathBuf, String> {
+fn resolve_jshell() -> Result<ResolvedJshell, String> {
     let executable = discover_jshell();
     let output = Command::new(&executable)
         .arg("--version")
         .output()
-        .map_err(|_| "未找到可用的 JShell，请安装 JDK 17 或更高版本".to_owned())?;
+        .map_err(|_| "未找到可用的 JShell，请安装 JDK 11 或更高版本".to_owned())?;
     let version_output = format!(
         "{} {}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    let supported = output.status.success()
-        && parse_jshell_major_version(&version_output).is_some_and(|major| major >= 17);
-    if supported {
-        Ok(executable)
-    } else {
-        Err("JShell 版本过低，请安装 JDK 17 或更高版本".to_owned())
+    let Some(environment) = parse_jshell_version(&version_output) else {
+        return Err("无法识别 JShell 版本，请安装 JDK 11 或更高版本".to_owned());
+    };
+    if !output.status.success() || environment.major_version < MIN_JDK_MAJOR_VERSION {
+        return Err("JShell 版本过低，请安装 JDK 11 或更高版本".to_owned());
     }
+    Ok(ResolvedJshell {
+        executable,
+        environment,
+    })
 }
 
-fn parse_jshell_major_version(output: &str) -> Option<u32> {
+fn parse_jshell_version(output: &str) -> Option<JavaEnvironment> {
     output.split_whitespace().find_map(|token| {
         let version = token.trim_start_matches("jshell").trim_start_matches('-');
         if !version.starts_with(|character: char| character.is_ascii_digit()) {
             return None;
         }
-        version.split('.').next()?.parse().ok()
+        Some(JavaEnvironment {
+            version: version.to_owned(),
+            major_version: version.split('.').next()?.parse().ok()?,
+        })
     })
 }
 
@@ -196,7 +220,7 @@ fn run_jshell(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|_| "未找到可用的 JShell，请安装 JDK 17 或更高版本".to_owned())?;
+        .map_err(|_| "未找到可用的 JShell，请安装 JDK 11 或更高版本".to_owned())?;
 
     let stdout_thread = drain_output(
         child
@@ -344,22 +368,27 @@ mod tests {
     }
 
     #[test]
-    fn 解析_jshell_主版本号() {
-        assert_eq!(parse_jshell_major_version("jshell 17.0.12"), Some(17));
-        assert_eq!(parse_jshell_major_version("jshell 21.0.8"), Some(21));
-        assert_eq!(parse_jshell_major_version("unknown"), None);
+    fn 解析_jshell_版本并接受_jdk11() {
+        let version = parse_jshell_version("jshell 11.0.26").expect("应解析 JDK 11");
+        assert_eq!(version.version, "11.0.26");
+        assert_eq!(version.major_version, MIN_JDK_MAJOR_VERSION);
+        assert_eq!(
+            parse_jshell_version("jshell 21.0.8").map(|value| value.major_version),
+            Some(21)
+        );
+        assert!(parse_jshell_version("unknown").is_none());
     }
 
     #[test]
     fn 可用时通过_jshell_执行代码片段() {
-        let Ok(executable) = resolve_jshell() else {
+        let Ok(jshell) = resolve_jshell() else {
             return;
         };
         let working_directory =
             env::temp_dir().join(format!("devbox-java-test-{}", Uuid::new_v4()));
         fs::create_dir(&working_directory).expect("应创建测试目录");
         let result = run_jshell(
-            &executable,
+            &jshell.executable,
             &working_directory,
             "System.out.println(6 * 7);",
             MAX_TIMEOUT_MS,
@@ -373,14 +402,14 @@ mod tests {
 
     #[test]
     fn 可用时识别_jshell_语法错误() {
-        let Ok(executable) = resolve_jshell() else {
+        let Ok(jshell) = resolve_jshell() else {
             return;
         };
         let working_directory =
             env::temp_dir().join(format!("devbox-java-test-{}", Uuid::new_v4()));
         fs::create_dir(&working_directory).expect("应创建测试目录");
         let result = run_jshell(
-            &executable,
+            &jshell.executable,
             &working_directory,
             "int value = ;",
             MAX_TIMEOUT_MS,
@@ -394,14 +423,14 @@ mod tests {
 
     #[test]
     fn 可用时识别运行时异常() {
-        let Ok(executable) = resolve_jshell() else {
+        let Ok(jshell) = resolve_jshell() else {
             return;
         };
         let working_directory =
             env::temp_dir().join(format!("devbox-java-test-{}", Uuid::new_v4()));
         fs::create_dir(&working_directory).expect("应创建测试目录");
         let result = run_jshell(
-            &executable,
+            &jshell.executable,
             &working_directory,
             "throw new RuntimeException(\"boom\");",
             MAX_TIMEOUT_MS,
@@ -418,14 +447,14 @@ mod tests {
 
     #[test]
     fn 可用时终止超时代码片段() {
-        let Ok(executable) = resolve_jshell() else {
+        let Ok(jshell) = resolve_jshell() else {
             return;
         };
         let working_directory =
             env::temp_dir().join(format!("devbox-java-test-{}", Uuid::new_v4()));
         fs::create_dir(&working_directory).expect("应创建测试目录");
         let result = run_jshell(
-            &executable,
+            &jshell.executable,
             &working_directory,
             "while (true) {}",
             1_000,
