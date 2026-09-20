@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { InstalledPlugin } from "@devbox/ipc-contracts";
 
 import { pluginAdminAPI } from "../../ipc/client";
+import { hostErrorMessage } from "../../ipc/errors";
 
 export function InstalledPluginPanel({
   active,
@@ -47,8 +48,7 @@ export function InstalledPluginPanel({
         );
         if (!cancelled) setError(undefined);
       } catch (nextError) {
-        if (!cancelled)
-          setError(nextError instanceof Error ? nextError.message : String(nextError));
+        if (!cancelled) setError(hostErrorMessage(nextError));
       }
     }
 
@@ -74,12 +74,13 @@ export function InstalledPluginPanel({
 
   return (
     <div className="installed-plugin-panel" ref={container}>
-      {error ? <div className="error-state">{error}</div> : null}
       {!("__TAURI_INTERNALS__" in window) ? (
         <div className="workspace-empty">
           <PackageOpen aria-hidden="true" />
           <p>{t("workspace.pluginBrowserOnly")}</p>
         </div>
+      ) : error ? (
+        <div className="error-state">{error}</div>
       ) : (
         <span className="plugin-loading-label">{t("workspace.pluginLoading")}</span>
       )}

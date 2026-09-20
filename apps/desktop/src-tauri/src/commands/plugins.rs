@@ -187,21 +187,38 @@ fn validate_core<T>(window: &Webview, envelope: &CommandEnvelope<T>) -> Result<(
 
 fn plugin_view_label(plugin_id: &str, view_id: &str) -> String {
     format!(
-        "plugin-{}-{}",
-        plugin_id.replace('.', "-"),
-        view_id.replace('.', "-")
+        "{}{}",
+        plugin_view_label_prefix(plugin_id),
+        encode_label_component(view_id)
     )
 }
 
+fn plugin_view_label_prefix(plugin_id: &str) -> String {
+    format!("plugin-{}-", encode_label_component(plugin_id))
+}
+
+fn encode_label_component(value: &str) -> String {
+    value.chars().fold(String::new(), |mut encoded, character| {
+        match character {
+            '.' => encoded.push_str("_d"),
+            '-' => encoded.push_str("_h"),
+            _ => encoded.push(character),
+        }
+        encoded
+    })
+}
+
 fn close_plugin_webviews(app: &AppHandle, state: &State<'_, AppState>, plugin_id: &str) {
+    let label_prefix = plugin_view_label_prefix(plugin_id);
     for (label, webview) in app.webviews() {
-        if state
+        let registered_to_plugin = state
             .runtime
             .resolve(&label)
-            .is_some_and(|identity| identity.plugin_id == plugin_id)
-        {
-            state.runtime.unbind(&label);
+            .is_some_and(|identity| identity.plugin_id == plugin_id);
+        // 即使上一次加载已经清除了运行时身份，也要按稳定标签关闭残留 WebView。
+        if registered_to_plugin || label.starts_with(&label_prefix) {
             let _ = webview.close();
+            state.runtime.unbind(&label);
         }
     }
 }
@@ -536,29 +553,40 @@ pub async fn plugin_open(
     }
     let label = plugin_view_label(&plugin.id, &envelope.payload.view_id);
     if let Some(existing) = app.get_webview(&label) {
+        let reusable = state.runtime.resolve(&label).is_some_and(|identity| {
+            identity.plugin_id == plugin.id && identity.version == plugin.current_version
+        });
+        if reusable {
+            existing
+                .set_position(LogicalPosition::new(
+                    envelope.payload.bounds.x,
+                    envelope.payload.bounds.y,
+                ))
+                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+            existing
+                .set_size(LogicalSize::new(
+                    envelope.payload.bounds.width,
+                    envelope.payload.bounds.height,
+                ))
+                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+            existing
+                .show()
+                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+            let locale = serde_json::to_string(envelope.payload.locale.as_str())
+                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+            existing
+                .eval(format!(
+                    "window.dispatchEvent(new CustomEvent('devbox:locale-change',{{detail:{locale}}}))"
+                ))
+                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+            return Ok(PluginOpenedResponse { label });
+        }
+
+        // 卸载、禁用或加载超时可能留下同标签窗口；先关闭再创建新的受信实例。
         existing
-            .set_position(LogicalPosition::new(
-                envelope.payload.bounds.x,
-                envelope.payload.bounds.y,
-            ))
+            .close()
             .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-        existing
-            .set_size(LogicalSize::new(
-                envelope.payload.bounds.width,
-                envelope.payload.bounds.height,
-            ))
-            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-        existing
-            .show()
-            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-        let locale = serde_json::to_string(envelope.payload.locale.as_str())
-            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-        existing
-            .eval(format!(
-                "window.dispatchEvent(new CustomEvent('devbox:locale-change',{{detail:{locale}}}))"
-            ))
-            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-        return Ok(PluginOpenedResponse { label });
+        state.runtime.unbind(&label);
     }
     let root = app
         .path()
@@ -635,6 +663,10 @@ pub async fn plugin_open(
         ),
     );
     if let Err(error) = created {
+        // 两次布局同步可能并发打开同一视图；若另一请求已创建成功则直接复用。
+        if app.get_webview(&label).is_some() {
+            return Ok(PluginOpenedResponse { label });
+        }
         state.runtime.unbind(&label);
         return Err(DevBoxError::internal(
             envelope.request_id(),
@@ -748,6 +780,21 @@ mod tests {
                 "payload": { "unexpected": true }
             }))
             .is_err()
+        );
+    }
+
+    #[test]
+    fn 插件窗口标签前缀只匹配所属插件() {
+        let prefix = plugin_view_label_prefix("devbox.java-snippet-runner");
+
+        assert!(plugin_view_label("devbox.java-snippet-runner", "main").starts_with(&prefix));
+        assert!(!plugin_view_label("devbox.other", "main").starts_with(&prefix));
+        assert!(
+            !plugin_view_label("devbox.java-snippet-runner-extra", "main").starts_with(&prefix)
+        );
+        assert_ne!(
+            plugin_view_label_prefix("devbox.tool-name"),
+            plugin_view_label_prefix("devbox.tool.name")
         );
     }
 }

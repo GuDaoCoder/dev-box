@@ -42,6 +42,19 @@ impl PluginRuntimeRegistry {
         version: String,
         root: PathBuf,
     ) -> Result<PluginWebviewIdentity, String> {
+        let mut identities = self
+            .identities
+            .lock()
+            .map_err(|_| "插件运行时状态不可用".to_owned())?;
+        if let Some(identity) = identities.get(&label) {
+            if identity.plugin_id == plugin_id
+                && identity.version == version
+                && identity.root == root
+            {
+                return Ok(identity.clone());
+            }
+            return Err("插件视图标签已被其他实例占用".to_owned());
+        }
         let identity = PluginWebviewIdentity {
             label: label.clone(),
             plugin_id,
@@ -52,10 +65,7 @@ impl PluginRuntimeRegistry {
             bridge_secret: uuid::Uuid::new_v4().to_string(),
             gesture_token: None,
         };
-        self.identities
-            .lock()
-            .map_err(|_| "插件运行时状态不可用".to_owned())?
-            .insert(label, identity.clone());
+        identities.insert(label, identity.clone());
         Ok(identity)
     }
 
@@ -279,5 +289,37 @@ mod tests {
             .expect("真实用户手势应换取一次性令牌");
         assert!(registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &token));
         assert!(!registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &token));
+    }
+
+    #[test]
+    fn 重复绑定同一插件窗口会复用原身份() {
+        let registry = PluginRuntimeRegistry::default();
+        let root = PathBuf::from("/tmp/devbox-plugin-fixture");
+        let first = registry
+            .bind(
+                "plugin-fixture".to_owned(),
+                "devbox.fixture".to_owned(),
+                "1.0.0".to_owned(),
+                root.clone(),
+            )
+            .expect("首次绑定应成功");
+        let second = registry
+            .bind(
+                "plugin-fixture".to_owned(),
+                "devbox.fixture".to_owned(),
+                "1.0.0".to_owned(),
+                root,
+            )
+            .expect("重复绑定应复用身份");
+
+        assert_eq!(first.bridge_secret, second.bridge_secret);
+        assert!(registry
+            .bind(
+                "plugin-fixture".to_owned(),
+                "devbox.other".to_owned(),
+                "1.0.0".to_owned(),
+                PathBuf::from("/tmp/devbox-plugin-other"),
+            )
+            .is_err());
     }
 }
