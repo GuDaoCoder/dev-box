@@ -223,6 +223,19 @@ fn close_plugin_webviews(app: &AppHandle, state: &State<'_, AppState>, plugin_id
     }
 }
 
+fn plugin_view_position(bounds: &PluginViewBounds) -> LogicalPosition<f64> {
+    #[cfg(target_os = "macos")]
+    {
+        // macOS 的子 WebView 坐标以窗口外框为原点，HTML 坐标则从标准标题栏下方开始。
+        LogicalPosition::new(bounds.x, bounds.y + 28.0)
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        LogicalPosition::new(bounds.x, bounds.y)
+    }
+}
+
 #[tauri::command]
 pub fn plugins_list(
     window: Webview,
@@ -552,16 +565,14 @@ pub async fn plugin_open(
         return Err(DevBoxError::not_found(envelope.request_id(), "plugin view"));
     }
     let label = plugin_view_label(&plugin.id, &envelope.payload.view_id);
+    let position = plugin_view_position(&envelope.payload.bounds);
     if let Some(existing) = app.get_webview(&label) {
         let reusable = state.runtime.resolve(&label).is_some_and(|identity| {
             identity.plugin_id == plugin.id && identity.version == plugin.current_version
         });
         if reusable {
             existing
-                .set_position(LogicalPosition::new(
-                    envelope.payload.bounds.x,
-                    envelope.payload.bounds.y,
-                ))
+                .set_position(position)
                 .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
             existing
                 .set_size(LogicalSize::new(
@@ -633,7 +644,7 @@ pub async fn plugin_open(
         "const __devboxTauriInvoke=window.__TAURI_INTERNALS__.invoke.bind(window.__TAURI_INTERNALS__);const __devboxInvoke=(command,payload={})=>__devboxTauriInvoke(command,{envelope:{apiVersion:1,pluginId:window.__DEVBOX_PLUGIN__.pluginId,requestId:crypto.randomUUID(),payload}});",
         "let __devboxGesture;const __devboxArmGesture=(event)=>{if(event.isTrusted){__devboxGesture=__devboxInvoke('plugin_user_gesture',{bridgeSecret:'",
         &identity.bridge_secret,
-        "'})}};addEventListener('pointerdown',__devboxArmGesture,true);addEventListener('keydown',__devboxArmGesture,true);",
+        "'})}};addEventListener('pointerdown',__devboxArmGesture,true);addEventListener('click',__devboxArmGesture,true);addEventListener('keydown',__devboxArmGesture,true);",
         "const __devboxReportFailure=()=>__devboxInvoke('plugin_report_failure',{version:window.__DEVBOX_PLUGIN__.version,bridgeSecret:'",
         &identity.bridge_secret,
         "'}).catch(()=>{});addEventListener('error',__devboxReportFailure,true);addEventListener('unhandledrejection',__devboxReportFailure,true);",
@@ -656,7 +667,7 @@ pub async fn plugin_open(
         });
     let created = window.window().add_child(
         child,
-        LogicalPosition::new(envelope.payload.bounds.x, envelope.payload.bounds.y),
+        position,
         LogicalSize::new(
             envelope.payload.bounds.width,
             envelope.payload.bounds.height,

@@ -26,7 +26,7 @@ pub struct PluginWebviewIdentity {
     #[serde(skip)]
     pub bridge_secret: String,
     #[serde(skip)]
-    pub gesture_token: Option<(String, Instant)>,
+    pub gesture_tokens: Vec<(String, Instant)>,
 }
 
 #[derive(Default)]
@@ -63,7 +63,7 @@ impl PluginRuntimeRegistry {
             consecutive_failures: 0,
             ready: false,
             bridge_secret: uuid::Uuid::new_v4().to_string(),
-            gesture_token: None,
+            gesture_tokens: Vec::new(),
         };
         identities.insert(label, identity.clone());
         Ok(identity)
@@ -110,8 +110,16 @@ impl PluginRuntimeRegistry {
         if identity.plugin_id != plugin_id || identity.bridge_secret != bridge_secret {
             return None;
         }
+        identity
+            .gesture_tokens
+            .retain(|(_, issued_at)| issued_at.elapsed() <= Duration::from_secs(2));
         let token = uuid::Uuid::new_v4().to_string();
-        identity.gesture_token = Some((token.clone(), Instant::now()));
+        identity
+            .gesture_tokens
+            .push((token.clone(), Instant::now()));
+        if identity.gesture_tokens.len() > 8 {
+            identity.gesture_tokens.remove(0);
+        }
         Some(token)
     }
 
@@ -140,11 +148,11 @@ impl PluginRuntimeRegistry {
             return false;
         }
         identity
-            .gesture_token
-            .take()
-            .is_some_and(|(expected, issued_at)| {
-                expected == token && issued_at.elapsed() <= Duration::from_secs(2)
-            })
+            .gesture_tokens
+            .iter()
+            .position(|(expected, _)| expected == token)
+            .map(|index| identity.gesture_tokens.remove(index))
+            .is_some_and(|(_, issued_at)| issued_at.elapsed() <= Duration::from_secs(2))
     }
 
     pub fn unbind(&self, label: &str) {
@@ -289,6 +297,28 @@ mod tests {
             .expect("真实用户手势应换取一次性令牌");
         assert!(registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &token));
         assert!(!registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &token));
+    }
+
+    #[test]
+    fn 连续用户操作签发的令牌可以分别消费() {
+        let registry = PluginRuntimeRegistry::default();
+        let identity = registry
+            .bind(
+                "plugin-fixture".to_owned(),
+                "devbox.fixture".to_owned(),
+                "1.0.0".to_owned(),
+                PathBuf::from("/tmp/devbox-plugin-fixture"),
+            )
+            .expect("运行时身份应创建成功");
+        let first = registry
+            .issue_gesture_token("plugin-fixture", "devbox.fixture", &identity.bridge_secret)
+            .expect("第一次操作应签发令牌");
+        let second = registry
+            .issue_gesture_token("plugin-fixture", "devbox.fixture", &identity.bridge_secret)
+            .expect("第二次操作应签发令牌");
+
+        assert!(registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &first));
+        assert!(registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &second));
     }
 
     #[test]
