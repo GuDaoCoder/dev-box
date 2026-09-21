@@ -44,7 +44,7 @@ export const builtInPlugins: readonly DevBoxPlugin[] = [${plugins
 
 if (process.argv.includes("--check")) {
   const current = await readFile(target, "utf8");
-  if (current !== output) {
+  if (current.replace(/\r\n/g, "\n") !== output) {
     throw new Error("内置插件注册表不是最新版本，请运行 pnpm plugins:generate");
   }
 } else {
