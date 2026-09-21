@@ -729,6 +729,7 @@ mod tests {
             )
             .expect("应统计旧设置");
         assert_eq!(settings, 0);
+        drop(connection);
         fs::remove_dir_all(root).expect("应清理测试目录");
     }
 }

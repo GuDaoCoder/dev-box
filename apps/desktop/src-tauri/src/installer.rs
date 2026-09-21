@@ -547,6 +547,7 @@ mod tests {
             .expect("未签名 ZIP 应完成安装");
         assert_eq!(installed.signature_status, "unsigned-development");
 
+        drop(installer);
         fs::remove_dir_all(root).expect("应清理测试目录");
     }
 
@@ -656,6 +657,8 @@ mod tests {
             .expect("应读取删除结果")
             .is_none());
 
+        drop(settings);
+        drop(installer);
         fs::remove_dir_all(root).expect("应清理测试目录");
     }
 }
