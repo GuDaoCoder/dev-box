@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@devbox/ui";
@@ -18,23 +18,23 @@ import {
   type TimestampResult,
 } from "./algorithms";
 
-function ToolHeader({
-  description,
-  eyebrow,
-  title,
-}: {
-  description: string;
-  eyebrow: string;
-  title: string;
-}) {
+function ToolHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <header className="page-header tool-page-header">
       <div>
         <span className="page-eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
-        <p>{description}</p>
       </div>
     </header>
+  );
+}
+
+function ToolActionBar({ actions, options }: { actions: ReactNode; options?: ReactNode }) {
+  return (
+    <div className="tool-action-bar">
+      <div className="tool-action-group">{actions}</div>
+      {options ? <div className="tool-option-group">{options}</div> : null}
+    </div>
   );
 }
 
@@ -73,43 +73,47 @@ export function JsonToolView() {
 
   return (
     <section className="tool-page">
-      <ToolHeader
-        eyebrow="DATA · JSON"
-        title={t("tools.json.title")}
-        description={t("tools.json.description")}
+      <ToolHeader eyebrow="DATA · JSON" title={t("tools.json.title")} />
+      <ToolActionBar
+        actions={
+          <>
+            <Button variant="primary" onClick={() => run(false)}>
+              {t("tools.json.format")}
+            </Button>
+            <Button onClick={() => run(true)}>{t("tools.json.compact")}</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setInput("");
+                setOutput("");
+                setStatus("");
+              }}
+            >
+              {t("actions.clear")}
+            </Button>
+          </>
+        }
+        options={
+          <>
+            <label>
+              <input
+                checked={sortKeys}
+                onChange={(event) => setSortKeys(event.currentTarget.checked)}
+                type="checkbox"
+              />
+              {t("tools.json.sort")}
+            </label>
+            <label>
+              <input
+                checked={wrap}
+                onChange={(event) => setWrap(event.currentTarget.checked)}
+                type="checkbox"
+              />
+              {t("tools.json.wrap")}
+            </label>
+          </>
+        }
       />
-      <div className="tool-actions">
-        <Button variant="primary" onClick={() => run(false)}>
-          {t("tools.json.format")}
-        </Button>
-        <Button onClick={() => run(true)}>{t("tools.json.compact")}</Button>
-        <label>
-          <input
-            checked={sortKeys}
-            onChange={(event) => setSortKeys(event.currentTarget.checked)}
-            type="checkbox"
-          />{" "}
-          {t("tools.json.sort")}
-        </label>
-        <label>
-          <input
-            checked={wrap}
-            onChange={(event) => setWrap(event.currentTarget.checked)}
-            type="checkbox"
-          />{" "}
-          {t("tools.json.wrap")}
-        </label>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setInput("");
-            setOutput("");
-            setStatus("");
-          }}
-        >
-          {t("actions.clear")}
-        </Button>
-      </div>
       {status ? (
         <p className="tool-inline-status" role="status">
           {status}
@@ -183,11 +187,7 @@ export function TimestampToolView() {
   }
   return (
     <section className="tool-page">
-      <ToolHeader
-        eyebrow="TIME · UNIX"
-        title={t("tools.timestamp.title")}
-        description={t("tools.timestamp.description")}
-      />
+      <ToolHeader eyebrow="TIME · UNIX" title={t("tools.timestamp.title")} />
       <div className="surface-card tool-form">
         <div className="tool-form-grid">
           <label>
@@ -211,20 +211,24 @@ export function TimestampToolView() {
             </select>
           </label>
         </div>
-        <div className="tool-actions">
-          <Button variant="primary" onClick={() => convert()}>
-            {t("actions.convert")}
-          </Button>
-          <Button
-            onClick={() => {
-              const value = String(Math.trunc(Date.now() / 1000));
-              setInput(value);
-              convert(value);
-            }}
-          >
-            {t("tools.timestamp.now")}
-          </Button>
-        </div>
+        <ToolActionBar
+          actions={
+            <>
+              <Button variant="primary" onClick={() => convert()}>
+                {t("actions.convert")}
+              </Button>
+              <Button
+                onClick={() => {
+                  const value = String(Math.trunc(Date.now() / 1000));
+                  setInput(value);
+                  convert(value);
+                }}
+              >
+                {t("tools.timestamp.now")}
+              </Button>
+            </>
+          }
+        />
         {error ? <p className="tool-error">{error}</p> : null}
         <dl className="tool-result-list">
           {rows.map(([label, value]) => (
@@ -259,61 +263,74 @@ export function EncodingToolView() {
   }
   return (
     <section className="tool-page">
-      <ToolHeader
-        eyebrow="TEXT · CODEC"
-        title={t("tools.encoding.title")}
-        description={t("tools.encoding.description")}
-      />
-      <div className="tool-actions tool-actions-wrap">
-        <div className="segmented-control">
-          {(["base64", "url", "hex"] as const).map((item) => (
-            <Button
-              key={item}
-              variant={mode === item ? "primary" : "ghost"}
-              onClick={() => setMode(item)}
-            >
-              {item === "hex" ? "UTF-8 Hex" : item.toUpperCase()}
+      <ToolHeader eyebrow="TEXT · CODEC" title={t("tools.encoding.title")} />
+      <ToolActionBar
+        actions={
+          <>
+            <Button variant="primary" onClick={run}>
+              {t(direction === "encode" ? "tools.encoding.encode" : "tools.encoding.decode")}
             </Button>
-          ))}
-        </div>
-        <div className="segmented-control">
-          <Button
-            variant={direction === "encode" ? "primary" : "ghost"}
-            onClick={() => setDirection("encode")}
-          >
-            {t("tools.encoding.encode")}
-          </Button>
-          <Button
-            variant={direction === "decode" ? "primary" : "ghost"}
-            onClick={() => setDirection("decode")}
-          >
-            {t("tools.encoding.decode")}
-          </Button>
-        </div>
-        <Button onClick={run}>
-          {t(direction === "encode" ? "tools.encoding.encode" : "tools.encoding.decode")}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setInput(output);
-            setOutput(input);
-            setDirection(direction === "encode" ? "decode" : "encode");
-          }}
-        >
-          {t("actions.swap")}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setInput("");
-            setOutput("");
-            setError("");
-          }}
-        >
-          {t("actions.clear")}
-        </Button>
-      </div>
+            <Button
+              onClick={() => {
+                setInput(output);
+                setOutput(input);
+                setDirection(direction === "encode" ? "decode" : "encode");
+              }}
+            >
+              {t("actions.swap")}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setInput("");
+                setOutput("");
+                setError("");
+              }}
+            >
+              {t("actions.clear")}
+            </Button>
+          </>
+        }
+        options={
+          <>
+            <div aria-label={t("tools.encoding.mode")} className="segmented-control" role="group">
+              {(["base64", "url", "hex"] as const).map((item) => (
+                <Button
+                  aria-pressed={mode === item}
+                  className={mode === item ? "is-selected" : undefined}
+                  key={item}
+                  variant="ghost"
+                  onClick={() => setMode(item)}
+                >
+                  {item === "hex" ? "UTF-8 Hex" : item.toUpperCase()}
+                </Button>
+              ))}
+            </div>
+            <div
+              aria-label={t("tools.encoding.direction")}
+              className="segmented-control"
+              role="group"
+            >
+              <Button
+                aria-pressed={direction === "encode"}
+                className={direction === "encode" ? "is-selected" : undefined}
+                variant="ghost"
+                onClick={() => setDirection("encode")}
+              >
+                {t("tools.encoding.encode")}
+              </Button>
+              <Button
+                aria-pressed={direction === "decode"}
+                className={direction === "decode" ? "is-selected" : undefined}
+                variant="ghost"
+                onClick={() => setDirection("decode")}
+              >
+                {t("tools.encoding.decode")}
+              </Button>
+            </div>
+          </>
+        }
+      />
       {error ? <p className="tool-error">{error}</p> : null}
       <div className="tool-editor-grid">
         <article className="tool-editor">
@@ -361,16 +378,24 @@ export function UuidHashToolView() {
   }
   return (
     <section className="tool-page">
-      <ToolHeader
-        eyebrow="IDENTITY · DIGEST"
-        title={t("tools.uuid.title")}
-        description={t("tools.uuid.description")}
-      />
-      <div className="segmented-control tool-actions">
-        <Button variant={mode === "uuid" ? "primary" : "ghost"} onClick={() => setMode("uuid")}>
+      <ToolHeader eyebrow="IDENTITY · DIGEST" title={t("tools.uuid.title")} />
+      <div className="segmented-control tool-mode-switcher" role="tablist">
+        <Button
+          aria-selected={mode === "uuid"}
+          className={mode === "uuid" ? "is-selected" : undefined}
+          role="tab"
+          variant="ghost"
+          onClick={() => setMode("uuid")}
+        >
           UUID v4
         </Button>
-        <Button variant={mode === "hash" ? "primary" : "ghost"} onClick={() => setMode("hash")}>
+        <Button
+          aria-selected={mode === "hash"}
+          className={mode === "hash" ? "is-selected" : undefined}
+          role="tab"
+          variant="ghost"
+          onClick={() => setMode("hash")}
+        >
           {t("tools.uuid.hash")}
         </Button>
       </div>
@@ -425,42 +450,64 @@ export function UuidHashToolView() {
             · {t("tools.uuid.digestNote")}
           </p>
           <div className="tool-form-grid">
-            <select
-              aria-label={t("tools.uuid.algorithm")}
-              className="select-input"
-              value={algorithm}
-              onChange={(event) => setAlgorithm(event.currentTarget.value as HashAlgorithm)}
-            >
-              {["SHA-256", "SHA-384", "SHA-512"].map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-            <select
-              aria-label={t("tools.uuid.outputEncoding")}
-              className="select-input"
-              value={encoding}
-              onChange={(event) => setEncoding(event.currentTarget.value as HashEncoding)}
-            >
-              <option value="hex">Hex</option>
-              <option value="base64">Base64</option>
-            </select>
+            <label>
+              {t("tools.uuid.algorithm")}
+              <select
+                className="select-input"
+                value={algorithm}
+                onChange={(event) => setAlgorithm(event.currentTarget.value as HashAlgorithm)}
+              >
+                {["SHA-256", "SHA-384", "SHA-512"].map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("tools.uuid.outputEncoding")}
+              <select
+                className="select-input"
+                value={encoding}
+                onChange={(event) => setEncoding(event.currentTarget.value as HashEncoding)}
+              >
+                <option value="hex">Hex</option>
+                <option value="base64">Base64</option>
+              </select>
+            </label>
           </div>
-          <div className="tool-actions">
-            <Button
-              variant="primary"
-              onClick={() => void hashText(input, algorithm, encoding).then(setHashOutput)}
-            >
-              {t("tools.uuid.calculate")}
-            </Button>
-            <Button
-              disabled={!hashOutput}
-              variant="ghost"
-              onClick={() => void copyText(hashOutput)}
-            >
-              {t("actions.copy")}
-            </Button>
+          <ToolActionBar
+            actions={
+              <>
+                <Button
+                  variant="primary"
+                  onClick={() => void hashText(input, algorithm, encoding).then(setHashOutput)}
+                >
+                  {t("tools.uuid.calculate")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setInput("");
+                    setHashOutput("");
+                  }}
+                >
+                  {t("actions.clear")}
+                </Button>
+              </>
+            }
+          />
+          <div className="tool-output-block">
+            <div className="tool-editor-heading">
+              <strong>{t("tools.common.output")}</strong>
+              <Button
+                disabled={!hashOutput}
+                variant="ghost"
+                onClick={() => void copyText(hashOutput)}
+              >
+                {t("actions.copy")}
+              </Button>
+            </div>
+            <output className="tool-hash-output">{hashOutput}</output>
           </div>
-          <output className="tool-hash-output">{hashOutput}</output>
         </div>
       )}
     </section>

@@ -14,7 +14,7 @@
     "system": "System"
   },
   "actions": {
-    "search": "Search features and commands",
+    "search": "Search",
     "openPalette": "Open command palette",
     "close": "Close",
     "clear": "Clear",
@@ -24,10 +24,9 @@
   },
   "status": {
     "ready": "Ready",
-    "plugins": "{{count}} custom plugins",
-    "milestone": "Built-in tools · Local plugins"
+    "plugins": "{{count}} plugins"
   },
-  "errors": { "pluginRender": "This feature cannot be displayed. Restart DevBox and try again." },
+  "errors": { "pluginRender": "Failed to load. Try again." },
   "palette": {
     "title": "Command palette",
     "placeholder": "Type a command or page name…",
@@ -36,8 +35,7 @@
   "workspace": {
     "label": "Feature workspace",
     "openTabs": "Open features",
-    "emptyTitle": "No feature is open",
-    "emptyDescription": "Choose a feature from the tree on the left.",
+    "empty": "Choose a feature from the left",
     "closeTab": "Close {{name}}",
     "tabMenu": {
       "label": "Tab actions",
@@ -46,45 +44,43 @@
       "closeRight": "Close Tabs to the Right",
       "closeOthers": "Close Other Tabs"
     },
-    "pluginLoading": "Loading plugin view…",
-    "pluginBrowserOnly": "Plugin views are available only in the DevBox desktop app."
+    "pluginLoading": "Loading…",
+    "pluginBrowserOnly": "Desktop app only"
   },
   "tools": {
     "common": { "input": "Input", "output": "Result" },
     "json": {
       "title": "JSON Tool",
-      "description": "Format, compact, validate, and recursively sort JSON object keys locally.",
       "format": "Format",
       "compact": "Compact",
       "sort": "Sort keys",
       "wrap": "Wrap lines",
       "empty": "Enter JSON to begin",
-      "tooLarge": "Input exceeds the 2 MiB limit",
-      "valid": "Valid JSON",
-      "invalid": "Invalid JSON at line {{line}}, column {{column}}"
+      "tooLarge": "Exceeds 2 MiB",
+      "valid": "Valid",
+      "invalid": "Error at line {{line}}, column {{column}}"
     },
     "timestamp": {
       "title": "Timestamp Tool",
-      "description": "Convert Unix timestamps, dates, and common time zones.",
       "input": "Timestamp or date",
       "timezone": "Target time zone",
-      "now": "Use current time",
+      "now": "Current time",
       "seconds": "Seconds",
       "milliseconds": "Milliseconds",
       "local": "Local time",
       "zoned": "Target zone",
-      "invalid": "Enter a valid timestamp or date"
+      "invalid": "Invalid time"
     },
     "encoding": {
       "title": "Encoding Tool",
-      "description": "Encode and decode Base64, URL, and UTF-8 hexadecimal text locally.",
+      "mode": "Encoding format",
+      "direction": "Direction",
       "encode": "Encode",
       "decode": "Decode",
-      "invalid": "The input cannot be transformed with these settings"
+      "invalid": "Cannot convert"
     },
     "uuid": {
       "title": "UUID & Hash",
-      "description": "Generate UUID v4 values in batches and calculate SHA-2 digests locally.",
       "hash": "Hash",
       "count": "Count (1–1000)",
       "generate": "Generate",
@@ -92,21 +88,18 @@
       "algorithm": "Algorithm",
       "outputEncoding": "Output encoding",
       "calculate": "Calculate",
-      "invalidCount": "Count must be an integer from 1 to 1000",
+      "invalidCount": "Enter an integer from 1–1000",
       "characters": "characters",
       "bytes": "bytes",
-      "digestNote": "A digest is not encryption and cannot recover the input"
+      "digestNote": "Digests are one-way"
     }
   },
   "pluginCenter": {
     "eyebrow": "CUSTOM PLUGINS",
     "title": "Plugin Manager",
-    "description": "Install, enable, update, and remove custom plugins from local ZIP archives.",
-    "sidebar": "All plugins come from local ZIP files. Unsigned plugins retain a visible security warning.",
     "tabs": { "installed": "Installed", "offline": "Add ZIP Plugin" },
     "actions": {
-      "installFromFile": "Add ZIP Plugin",
-      "choosePackage": "Choose ZIP archive",
+      "choosePackage": "Choose ZIP",
       "install": "Install",
       "update": "Update",
       "cancel": "Cancel",
@@ -124,30 +117,28 @@
       "unsigned-development": "Unsigned"
     },
     "offline": {
-      "title": "Add a custom plugin",
-      "description": "Choose a ZIP archive containing plugin.json. DevBox checks paths, limits, structure, and compatibility.",
-      "unsignedWarning": "An unsigned plugin's publisher and content integrity cannot be verified. Install ZIP files only from sources you trust."
+      "title": "Add ZIP Plugin",
+      "description": "Choose a ZIP file containing plugin.json.",
+      "unsignedWarning": "Unsigned plugin origin and integrity cannot be verified. Install trusted ZIP files only."
     },
     "confirm": {
-      "title": "Confirm plugin installation",
+      "title": "Install Plugin",
       "source": "Source",
       "publisher": "Publisher",
       "signature": "Signature",
       "permissions": "Requested permissions",
-      "noPermissions": "This plugin requests no Host permissions.",
-      "javaExecuteWarning": "This permission lets the plugin execute Java through JShell. Code runs with the current user's privileges and may access local files, the network, or other processes. Run only code you understand and trust."
+      "noPermissions": "No Host permissions.",
+      "javaExecuteWarning": "The plugin can run Java through JShell with your user privileges and access files, networks, or processes. Install trusted plugins only."
     },
     "confirmUninstall": {
       "plugin": "Uninstall {{name}}?",
-      "data": "Delete the plugin's saved local data too? Choose Cancel to keep it."
+      "data": "Delete local data too? Cancel to keep it."
     },
     "empty": {
-      "installedTitle": "No plugins installed",
-      "installedDescription": "Add a custom plugin from a local ZIP archive."
+      "installedTitle": "No plugins installed"
     },
     "messages": {
-      "desktopOnly": "File selection is available in the DevBox desktop app.",
-      "operationComplete": "Plugin state updated."
+      "desktopOnly": "Desktop app only."
     }
   }
 }

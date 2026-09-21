@@ -435,7 +435,6 @@ function App() {
               );
             })}
           </nav>
-          <div className="sidebar-note">{t("status.milestone")}</div>
         </aside>
 
         <section aria-label={t("workspace.label")} className="main-workspace tab-workspace">
@@ -561,8 +560,7 @@ function App() {
             ) : (
               <div className="workspace-empty">
                 <Command aria-hidden="true" />
-                <h2>{t("workspace.emptyTitle")}</h2>
-                <p>{t("workspace.emptyDescription")}</p>
+                <p>{t("workspace.empty")}</p>
               </div>
             )}
           </div>

@@ -32,7 +32,6 @@ export function SettingsView() {
         <div>
           <p className="page-eyebrow">DEVBOX</p>
           <h1 id="settings-title">{t("title")}</h1>
-          <p>{t("description")}</p>
         </div>
       </header>
 
@@ -41,7 +40,6 @@ export function SettingsView() {
           <Languages aria-hidden="true" />
           <div className="setting-copy">
             <h2>{t("language")}</h2>
-            <p>{t("languageDescription")}</p>
           </div>
           <select
             aria-label={t("language")}
@@ -59,20 +57,21 @@ export function SettingsView() {
           {theme === "dark" ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
           <div className="setting-copy">
             <h2>{t("appearance")}</h2>
-            <p>{t("theme")}</p>
           </div>
           <div className="segmented-control" aria-label={t("theme")} role="group">
             <Button
               aria-pressed={theme === "dark"}
+              className={theme === "dark" ? "is-selected" : undefined}
               onClick={() => changeTheme("dark")}
-              variant={theme === "dark" ? "primary" : "ghost"}
+              variant="ghost"
             >
               {t("dark")}
             </Button>
             <Button
               aria-pressed={theme === "light"}
+              className={theme === "light" ? "is-selected" : undefined}
               onClick={() => changeTheme("light")}
-              variant={theme === "light" ? "primary" : "ghost"}
+              variant="ghost"
             >
               {t("light")}
             </Button>

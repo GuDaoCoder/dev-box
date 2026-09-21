@@ -14,7 +14,7 @@
     "system": "系统"
   },
   "actions": {
-    "search": "搜索功能与命令",
+    "search": "搜索",
     "openPalette": "打开命令面板",
     "close": "关闭",
     "clear": "清空",
@@ -24,10 +24,9 @@
   },
   "status": {
     "ready": "就绪",
-    "plugins": "{{count}} 个自定义插件",
-    "milestone": "内置工具 · 本地插件"
+    "plugins": "{{count}} 个插件"
   },
-  "errors": { "pluginRender": "当前功能无法显示，请重新启动 DevBox 后再试。" },
+  "errors": { "pluginRender": "加载失败，请重试。" },
   "palette": {
     "title": "命令面板",
     "placeholder": "输入命令或页面名称…",
@@ -36,8 +35,7 @@
   "workspace": {
     "label": "功能工作区",
     "openTabs": "已打开功能",
-    "emptyTitle": "尚未打开功能",
-    "emptyDescription": "从左侧功能树选择一个功能开始使用。",
+    "empty": "从左侧选择功能",
     "closeTab": "关闭 {{name}}",
     "tabMenu": {
       "label": "标签页操作",
@@ -46,45 +44,43 @@
       "closeRight": "关闭右侧",
       "closeOthers": "关闭其他"
     },
-    "pluginLoading": "正在载入插件视图…",
-    "pluginBrowserOnly": "插件视图只能在 DevBox 桌面应用中运行。"
+    "pluginLoading": "加载中…",
+    "pluginBrowserOnly": "仅支持桌面应用"
   },
   "tools": {
     "common": { "input": "输入", "output": "结果" },
     "json": {
       "title": "JSON 工具",
-      "description": "在本地格式化、压缩、校验 JSON，并可递归排序对象键。",
       "format": "格式化",
       "compact": "压缩",
       "sort": "排序键",
       "wrap": "自动换行",
       "empty": "请输入 JSON",
-      "tooLarge": "输入超过 2 MiB 限制",
-      "valid": "JSON 有效",
-      "invalid": "JSON 无效：第 {{line}} 行，第 {{column}} 列"
+      "tooLarge": "超过 2 MiB",
+      "valid": "格式正确",
+      "invalid": "第 {{line}} 行，第 {{column}} 列有误"
     },
     "timestamp": {
       "title": "时间戳工具",
-      "description": "在 Unix 时间戳、日期和常用时区之间转换。",
       "input": "时间戳或日期",
       "timezone": "目标时区",
-      "now": "使用当前时间",
+      "now": "当前时间",
       "seconds": "秒",
       "milliseconds": "毫秒",
       "local": "本地时间",
       "zoned": "目标时区",
-      "invalid": "请输入有效的时间戳或日期"
+      "invalid": "时间无效"
     },
     "encoding": {
       "title": "编码转换",
-      "description": "在本地进行 Base64、URL 和 UTF-8 十六进制编解码。",
+      "mode": "编码格式",
+      "direction": "转换方向",
       "encode": "编码",
       "decode": "解码",
-      "invalid": "输入内容无法完成当前转换"
+      "invalid": "无法转换"
     },
     "uuid": {
       "title": "UUID 与哈希",
-      "description": "批量生成 UUID v4，并在本地计算 SHA-2 摘要。",
       "hash": "哈希",
       "count": "生成数量（1–1000）",
       "generate": "生成",
@@ -92,21 +88,18 @@
       "algorithm": "算法",
       "outputEncoding": "输出格式",
       "calculate": "计算",
-      "invalidCount": "数量必须是 1 到 1000 的整数",
+      "invalidCount": "请输入 1–1000 的整数",
       "characters": "字符",
       "bytes": "字节",
-      "digestNote": "摘要不是加密，不能用于恢复原文"
+      "digestNote": "摘要不可还原"
     }
   },
   "pluginCenter": {
     "eyebrow": "CUSTOM PLUGINS",
     "title": "插件管理",
-    "description": "从本地 ZIP 压缩包安装、启停、升级和卸载自定义插件。",
-    "sidebar": "所有插件均来自本地 ZIP 文件；未签名插件会显示持续安全警告。",
     "tabs": { "installed": "已安装", "offline": "添加 ZIP 插件" },
     "actions": {
-      "installFromFile": "添加 ZIP 插件",
-      "choosePackage": "选择 ZIP 压缩包",
+      "choosePackage": "选择 ZIP",
       "install": "安装",
       "update": "更新",
       "cancel": "取消",
@@ -124,30 +117,28 @@
       "unsigned-development": "未签名"
     },
     "offline": {
-      "title": "添加自定义插件",
-      "description": "选择包含 plugin.json 的 ZIP 压缩包。DevBox 会检查路径、大小、结构和兼容性。",
-      "unsignedWarning": "未签名插件的发布者身份和内容完整性无法验证。请只安装你信任来源的 ZIP 文件。"
+      "title": "添加 ZIP 插件",
+      "description": "选择包含 plugin.json 的 ZIP 文件。",
+      "unsignedWarning": "无法验证未签名插件的来源和完整性，仅安装可信 ZIP。"
     },
     "confirm": {
-      "title": "确认安装插件",
+      "title": "安装插件",
       "source": "来源",
       "publisher": "发布者",
       "signature": "签名",
       "permissions": "申请的权限",
-      "noPermissions": "此插件不申请 Host 权限。",
-      "javaExecuteWarning": "此权限允许插件通过 JShell 执行 Java 代码。代码将在当前用户权限下运行，可能访问本机文件、网络或启动其他进程。请只运行你理解并信任的代码。"
+      "noPermissions": "无需 Host 权限。",
+      "javaExecuteWarning": "插件可通过 JShell 以当前用户权限执行 Java，并访问文件、网络或进程。仅安装可信插件。"
     },
     "confirmUninstall": {
-      "plugin": "确定卸载 {{name}} 吗？",
-      "data": "是否同时删除该插件保存的本地数据？选择“取消”将保留数据。"
+      "plugin": "卸载 {{name}}？",
+      "data": "同时删除本地数据？取消则保留。"
     },
     "empty": {
-      "installedTitle": "还没有安装插件",
-      "installedDescription": "可以从本地 ZIP 压缩包添加自定义插件。"
+      "installedTitle": "未安装插件"
     },
     "messages": {
-      "desktopOnly": "文件选择只能在 DevBox 桌面应用中使用。",
-      "operationComplete": "插件状态已更新。"
+      "desktopOnly": "仅支持桌面应用。"
     }
   }
 }

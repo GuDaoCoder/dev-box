@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import App from "./App";
@@ -24,7 +24,21 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "JSON Tool" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Data" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Timestamp Tool" })).toBeVisible();
-    expect(screen.getByText("0 custom plugins")).toBeVisible();
+    expect(screen.getByText("0 plugins")).toBeVisible();
+  });
+
+  it("按操作和选项分组显示 JSON 工具栏", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+
+    const actionBar = screen.getByRole("button", { name: "Format" }).closest(".tool-action-bar");
+    expect(actionBar).not.toBeNull();
+    expect(
+      within(actionBar as HTMLElement)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Format", "Compact", "Clear"]);
+    expect(within(actionBar as HTMLElement).getAllByRole("checkbox")).toHaveLength(2);
   });
 
   it("同一功能只打开一个可关闭的工作区标签", async () => {

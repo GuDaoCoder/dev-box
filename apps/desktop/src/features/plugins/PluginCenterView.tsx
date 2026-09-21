@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { confirm, open } from "@tauri-apps/plugin-dialog";
 import {
-  BadgeCheck,
   CircleAlert,
   FolderOpen,
   PackageOpen,
@@ -36,13 +35,11 @@ export function PluginCenterView({
   const [tab, setTab] = useState<CenterTab>("installed");
   const [preflight, setPreflight] = useState<InstallPreflight>();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string>();
   const [error, setError] = useState<string>();
 
   async function run(operation: () => Promise<void>) {
     setBusy(true);
     setError(undefined);
-    setNotice(undefined);
     try {
       await operation();
     } catch (nextError) {
@@ -54,7 +51,6 @@ export function PluginCenterView({
 
   function applyPlugins(next: InstalledPlugin[]) {
     onPluginsChange(next);
-    setNotice(t("pluginCenter.messages.operationComplete"));
   }
 
   async function choosePackage() {
@@ -107,12 +103,7 @@ export function PluginCenterView({
         <div>
           <span className="page-eyebrow">{t("pluginCenter.eyebrow")}</span>
           <h1>{t("pluginCenter.title")}</h1>
-          <p>{t("pluginCenter.description")}</p>
         </div>
-        <Button onClick={() => setTab("offline")}>
-          <FolderOpen aria-hidden="true" size={16} />
-          {t("pluginCenter.actions.installFromFile")}
-        </Button>
       </header>
 
       <div aria-label={t("pluginCenter.title")} className="plugin-tabs" role="tablist">
@@ -137,13 +128,6 @@ export function PluginCenterView({
           {error}
         </div>
       ) : null}
-      {notice ? (
-        <div className="plugin-notice success" role="status">
-          <BadgeCheck aria-hidden="true" size={18} />
-          {notice}
-        </div>
-      ) : null}
-
       {tab === "installed" ? (
         <section className="plugin-list" aria-label={t("pluginCenter.tabs.installed")}>
           {plugins.length ? (
@@ -223,7 +207,6 @@ export function PluginCenterView({
             <div className="plugin-empty">
               <PackageOpen aria-hidden="true" />
               <h2>{t("pluginCenter.empty.installedTitle")}</h2>
-              <p>{t("pluginCenter.empty.installedDescription")}</p>
             </div>
           )}
         </section>
