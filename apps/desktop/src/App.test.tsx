@@ -41,6 +41,22 @@ describe("App", () => {
     expect(within(actionBar as HTMLElement).getAllByRole("checkbox")).toHaveLength(2);
   });
 
+  it("文本类工具默认不填充示例数据", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+    expect(screen.getByRole("textbox", { name: "Input" })).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
+    expect(screen.getByRole("textbox", { name: "Timestamp or date" })).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Encoding Tool" }));
+    expect(screen.getByRole("textbox", { name: "Input" })).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "UUID & Hash" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Hash" }));
+    expect(screen.getByRole("textbox", { name: "Text to hash" })).toHaveValue("");
+  });
+
   it("同一功能只打开一个可关闭的工作区标签", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "JSON Tool" });

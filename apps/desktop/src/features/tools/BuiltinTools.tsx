@@ -44,7 +44,7 @@ async function copyText(value: string) {
 
 export function JsonToolView() {
   const { t } = useTranslation();
-  const [input, setInput] = useState('{"hello":"world","items":[1,2,3]}');
+  const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [sortKeys, setSortKeys] = useState(false);
   const [wrap, setWrap] = useState(true);
@@ -153,7 +153,7 @@ export function JsonToolView() {
 
 export function TimestampToolView() {
   const { t, i18n } = useTranslation();
-  const [input, setInput] = useState(() => String(Math.trunc(Date.now() / 1000)));
+  const [input, setInput] = useState("");
   const [zone, setZone] = useState("UTC");
   const [result, setResult] = useState<TimestampResult>();
   const [error, setError] = useState("");
@@ -250,7 +250,7 @@ export function EncodingToolView() {
   const { t } = useTranslation();
   const [mode, setMode] = useState<EncodingMode>("base64");
   const [direction, setDirection] = useState<EncodingDirection>("encode");
-  const [input, setInput] = useState("DevBox 开发工具");
+  const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
   function run() {
@@ -362,7 +362,7 @@ export function UuidHashToolView() {
   const [mode, setMode] = useState<"uuid" | "hash">("uuid");
   const [count, setCount] = useState("5");
   const [uuidOutput, setUuidOutput] = useState("");
-  const [input, setInput] = useState("DevBox");
+  const [input, setInput] = useState("");
   const [algorithm, setAlgorithm] = useState<HashAlgorithm>("SHA-256");
   const [encoding, setEncoding] = useState<HashEncoding>("hex");
   const [hashOutput, setHashOutput] = useState("");
