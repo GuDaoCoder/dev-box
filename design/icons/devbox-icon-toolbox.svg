@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">DevBox 工具箱图标</title>
+  <desc id="desc">青色圆角方形内包含深色工具箱轮廓和青色锁扣。</desc>
+  <rect width="512" height="512" rx="112" fill="#43C6E8"/>
+  <path d="M176 190v-31c0-29 23-52 52-52h56c29 0 52 23 52 52v31" fill="none" stroke="#07141A" stroke-width="36" stroke-linecap="round"/>
+  <path d="M103 190h306c18 0 32 14 32 32v178c0 18-14 32-32 32H103c-18 0-32-14-32-32V222c0-18 14-32 32-32Z" fill="#07141A"/>
+  <path d="M71 271h370" stroke="#43C6E8" stroke-width="28"/>
+  <rect x="222" y="244" width="68" height="70" rx="18" fill="#43C6E8"/>
+</svg>
+

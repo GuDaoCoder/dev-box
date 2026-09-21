@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">DevBox 品牌图标候选方案</title>
+  <desc id="desc">四种用于替换 D 字品牌标志的图标方案，分别是命令终端、工具箱、模块中心和代码方盒。</desc>
+  <rect width="1600" height="1000" fill="#0B0F14"/>
+  <text x="96" y="102" fill="#E8EDF2" font-family="Inter, -apple-system, sans-serif" font-size="42" font-weight="700">DevBox 品牌图标候选</text>
+  <text x="96" y="148" fill="#9AA7B5" font-family="Inter, -apple-system, sans-serif" font-size="22">替换界面中的 D 字标志 · 兼顾 48px 品牌位与 24px 小尺寸显示</text>
+
+  <g transform="translate(80 210)">
+    <rect width="340" height="670" rx="24" fill="#111821" stroke="#263241" stroke-width="2"/>
+    <image href="icons/devbox-icon-command.svg" x="58" y="48" width="224" height="224"/>
+    <text x="40" y="334" fill="#43C6E8" font-family="Inter, -apple-system, sans-serif" font-size="18" font-weight="700">01</text>
+    <text x="40" y="376" fill="#E8EDF2" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="700">命令终端</text>
+    <text x="40" y="416" fill="#9AA7B5" font-family="Inter, -apple-system, sans-serif" font-size="18">识别最快，开发工具属性最强</text>
+    <text x="40" y="450" fill="#647181" font-family="Inter, -apple-system, sans-serif" font-size="16">适合：主界面品牌标志</text>
+    <rect x="40" y="505" width="220" height="92" rx="14" fill="#0B0F14"/>
+    <image href="icons/devbox-icon-command.svg" x="58" y="527" width="48" height="48"/>
+    <image href="icons/devbox-icon-command.svg" x="137" y="539" width="24" height="24"/>
+    <text x="182" y="560" fill="#647181" font-family="Inter, sans-serif" font-size="14">48 / 24px</text>
+  </g>
+
+  <g transform="translate(450 210)">
+    <rect width="340" height="670" rx="24" fill="#111821" stroke="#263241" stroke-width="2"/>
+    <image href="icons/devbox-icon-toolbox.svg" x="58" y="48" width="224" height="224"/>
+    <text x="40" y="334" fill="#43C6E8" font-family="Inter, -apple-system, sans-serif" font-size="18" font-weight="700">02</text>
+    <text x="40" y="376" fill="#E8EDF2" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="700">工具箱</text>
+    <text x="40" y="416" fill="#9AA7B5" font-family="Inter, -apple-system, sans-serif" font-size="18">产品语义直接，非技术用户也易懂</text>
+    <text x="40" y="450" fill="#647181" font-family="Inter, -apple-system, sans-serif" font-size="16">适合：通用工具平台定位</text>
+    <rect x="40" y="505" width="220" height="92" rx="14" fill="#0B0F14"/>
+    <image href="icons/devbox-icon-toolbox.svg" x="58" y="527" width="48" height="48"/>
+    <image href="icons/devbox-icon-toolbox.svg" x="137" y="539" width="24" height="24"/>
+    <text x="182" y="560" fill="#647181" font-family="Inter, sans-serif" font-size="14">48 / 24px</text>
+  </g>
+
+  <g transform="translate(820 210)">
+    <rect width="340" height="670" rx="24" fill="#111821" stroke="#263241" stroke-width="2"/>
+    <image href="icons/devbox-icon-modules.svg" x="58" y="48" width="224" height="224"/>
+    <text x="40" y="334" fill="#43C6E8" font-family="Inter, -apple-system, sans-serif" font-size="18" font-weight="700">03</text>
+    <text x="40" y="376" fill="#E8EDF2" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="700">模块中心</text>
+    <text x="40" y="416" fill="#9AA7B5" font-family="Inter, -apple-system, sans-serif" font-size="18">体现内置工具与插件扩展能力</text>
+    <text x="40" y="450" fill="#647181" font-family="Inter, -apple-system, sans-serif" font-size="16">适合：突出插件化平台</text>
+    <rect x="40" y="505" width="220" height="92" rx="14" fill="#0B0F14"/>
+    <image href="icons/devbox-icon-modules.svg" x="58" y="527" width="48" height="48"/>
+    <image href="icons/devbox-icon-modules.svg" x="137" y="539" width="24" height="24"/>
+    <text x="182" y="560" fill="#647181" font-family="Inter, sans-serif" font-size="14">48 / 24px</text>
+  </g>
+
+  <g transform="translate(1190 210)">
+    <rect width="340" height="670" rx="24" fill="#111821" stroke="#263241" stroke-width="2"/>
+    <image href="icons/devbox-icon-codebox.svg" x="58" y="48" width="224" height="224"/>
+    <text x="40" y="334" fill="#43C6E8" font-family="Inter, -apple-system, sans-serif" font-size="18" font-weight="700">04</text>
+    <text x="40" y="376" fill="#E8EDF2" font-family="Inter, -apple-system, sans-serif" font-size="28" font-weight="700">代码方盒</text>
+    <text x="40" y="416" fill="#9AA7B5" font-family="Inter, -apple-system, sans-serif" font-size="18">“Dev + Box” 含义最完整</text>
+    <text x="40" y="450" fill="#647181" font-family="Inter, -apple-system, sans-serif" font-size="16">适合：应用图标与品牌升级</text>
+    <rect x="40" y="505" width="220" height="92" rx="14" fill="#0B0F14"/>
+    <image href="icons/devbox-icon-codebox.svg" x="58" y="527" width="48" height="48"/>
+    <image href="icons/devbox-icon-codebox.svg" x="137" y="539" width="24" height="24"/>
+    <text x="182" y="560" fill="#647181" font-family="Inter, sans-serif" font-size="14">48 / 24px</text>
+  </g>
+
+  <text x="96" y="940" fill="#55D6A7" font-family="Inter, -apple-system, sans-serif" font-size="20" font-weight="600">建议优先：01 命令终端；若要强调插件平台，选择 03 模块中心。</text>
+</svg>
+

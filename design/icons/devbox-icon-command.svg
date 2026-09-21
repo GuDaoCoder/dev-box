@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">DevBox 命令终端图标</title>
+  <desc id="desc">青色圆角方形内包含深色命令箭头和下划线。</desc>
+  <rect width="512" height="512" rx="112" fill="#43C6E8"/>
+  <path d="M132 153 230 256l-98 103" fill="none" stroke="#07141A" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M264 359h116" fill="none" stroke="#07141A" stroke-width="48" stroke-linecap="round"/>
+</svg>
+
