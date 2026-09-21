@@ -1,4 +1,5 @@
 import eslint from "@eslint/js";
+import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import globals from "globals";
@@ -34,7 +35,7 @@ export default tseslint.config(
         projectService: {
           allowDefaultProject: ["playwright.config.ts", "tests/e2e/*.ts"],
         },
-        tsconfigRootDir: new URL("../../", import.meta.url).pathname,
+        tsconfigRootDir: fileURLToPath(new URL("../../", import.meta.url)),
       },
     },
     plugins: {
