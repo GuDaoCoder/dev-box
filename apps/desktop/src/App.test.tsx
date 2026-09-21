@@ -21,6 +21,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("DevBox")).toBeVisible();
+    expect(document.querySelector("img.brand-mark")).toBeVisible();
     expect(await screen.findByRole("heading", { name: "JSON Tool" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Data" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Timestamp Tool" })).toBeVisible();

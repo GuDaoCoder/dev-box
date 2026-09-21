@@ -15,6 +15,7 @@ import type { InstalledPlugin } from "@devbox/ipc-contracts";
 import { Kbd, StatusDot } from "@devbox/ui";
 
 import "./App.css";
+import devboxMark from "./assets/devbox-mark.svg";
 import {
   builtinFeatures,
   featureCategories,
@@ -361,9 +362,7 @@ function App() {
   return (
     <main className="app-shell">
       <header className="titlebar">
-        <span className="brand-mark" aria-hidden="true">
-          D
-        </span>
+        <img alt="" aria-hidden="true" className="brand-mark" src={devboxMark} />
         <div className="brand-copy">
           <strong>{t("app.name")}</strong>
           <span>{t("app.tagline")}</span>

@@ -89,14 +89,10 @@ textarea:focus-visible,
   border-bottom: 1px solid var(--border);
 }
 .brand-mark {
-  display: grid;
+  display: block;
   width: 30px;
   height: 30px;
-  place-items: center;
-  border-radius: 8px;
-  color: #061016;
-  background: var(--accent);
-  font-weight: 800;
+  flex: none;
 }
 .brand-copy {
   display: grid;
