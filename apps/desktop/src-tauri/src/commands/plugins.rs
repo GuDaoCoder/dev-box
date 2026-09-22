@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use tauri::{
-    AppHandle, LogicalPosition, LogicalSize, Manager, State, Webview, WebviewBuilder, WebviewUrl,
+    AppHandle, LogicalPosition, LogicalSize, Manager, State, Url, Webview, WebviewBuilder,
+    WebviewUrl,
 };
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -206,6 +207,14 @@ fn encode_label_component(value: &str) -> String {
         }
         encoded
     })
+}
+
+fn is_plugin_view_url(url: &Url) -> bool {
+    let native_protocol = url.scheme() == "devbox-plugin" && url.host_str() == Some("localhost");
+    // Windows/Android 会把自定义协议映射为 http(s)://<scheme>.localhost。
+    let rewritten_protocol = matches!(url.scheme(), "http" | "https")
+        && url.host_str() == Some("devbox-plugin.localhost");
+    native_protocol || rewritten_protocol
 }
 
 fn close_plugin_webviews(app: &AppHandle, state: &State<'_, AppState>, plugin_id: &str) {
@@ -616,12 +625,11 @@ pub async fn plugin_open(
         )
         .map_err(|reason| DevBoxError::internal(envelope.request_id(), reason))?;
     let url = format!(
-        "devbox-plugin://{}/{}#{}",
-        plugin.id, plugin.manifest.entry.main, envelope.payload.view_id
+        "devbox-plugin://localhost/{}#{}",
+        plugin.manifest.entry.main, envelope.payload.view_id
     )
     .parse()
     .map_err(|_| DevBoxError::internal(envelope.request_id(), "插件入口 URL 无效"))?;
-    let allowed_plugin = plugin.id.clone();
     let java_environment = plugin
         .granted_permissions
         .iter()
@@ -657,14 +665,7 @@ pub async fn plugin_open(
     .concat();
     let child = WebviewBuilder::new(&label, WebviewUrl::CustomProtocol(url))
         .initialization_script(initialization_script)
-        .on_navigation(move |url| {
-            let native_protocol = url.scheme() == "devbox-plugin"
-                && url.host_str().is_some_and(|host| host == allowed_plugin);
-            // Windows/Android 会把自定义协议映射为 http://<scheme>.localhost。
-            let rewritten_protocol = matches!(url.scheme(), "http" | "https")
-                && url.host_str() == Some("devbox-plugin.localhost");
-            native_protocol || rewritten_protocol
-        });
+        .on_navigation(is_plugin_view_url);
     let created = window.window().add_child(
         child,
         position,
@@ -807,5 +808,24 @@ mod tests {
             plugin_view_label_prefix("devbox.tool-name"),
             plugin_view_label_prefix("devbox.tool.name")
         );
+    }
+
+    #[test]
+    fn 插件视图允许原生和_windows_改写后的地址() {
+        assert!(is_plugin_view_url(
+            &Url::parse("devbox-plugin://localhost/dist/index.html").expect("原生地址应有效")
+        ));
+        assert!(is_plugin_view_url(
+            &Url::parse("http://devbox-plugin.localhost/dist/index.html")
+                .expect("Windows 地址应有效")
+        ));
+        assert!(is_plugin_view_url(
+            &Url::parse("https://devbox-plugin.localhost/dist/index.html")
+                .expect("Windows HTTPS 地址应有效")
+        ));
+        assert!(!is_plugin_view_url(
+            &Url::parse("http://devbox-plugin.example.com/dist/index.html")
+                .expect("外部地址应可解析")
+        ));
     }
 }
