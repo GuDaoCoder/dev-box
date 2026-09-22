@@ -13,19 +13,20 @@ env:
 
 jobs:
   desktop-bundle:
-    name: Bundle (${{ matrix.os }})
+    name: Bundle (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-22.04, windows-latest]
+        include:
+          - name: Windows with WebView2
+            os: windows-latest
+            artifact: Windows-WebView2
+          - name: macOS without WebView2
+            os: macos-latest
+            artifact: macOS
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - uses: pnpm/action-setup@v4
         with:
           version: 12.4.2
@@ -54,12 +55,9 @@ jobs:
         run: node -e "console.log('version=' + require('./package.json').version)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
-          name: devbox-${{ steps.version.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+          name: devbox-${{ steps.version.outputs.version }}-${{ matrix.artifact }}-${{ runner.arch }}
           path: |
             target/release/bundle/**/*.dmg
-            target/release/bundle/**/*.deb
-            target/release/bundle/**/*.rpm
-            target/release/bundle/**/*.AppImage
             target/release/bundle/**/*.msi
             target/release/bundle/**/*-setup.exe
           if-no-files-found: error
