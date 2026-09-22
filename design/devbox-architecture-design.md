@@ -8,7 +8,7 @@
 >
 > 核心栈：Tauri 2、React、TypeScript、Vite、Rust、SQLite
 >
-> 仓库边界：平台与内置工具代码位于 `dev-box`；独立扩展使用单独 Git 项目
+> 仓库边界：平台、内置工具与官方插件位于 `dev-box` monorepo；第三方插件使用独立 Git 项目
 
 ## 0. 摘要与关键决策
 
@@ -18,7 +18,7 @@ DevBox 是本地优先、可扩展的桌面开发工具箱。JSON、Timestamp、
 
 1. 桌面容器采用 Tauri 2，界面采用 React + TypeScript，特权能力由 Rust Host 提供。
 2. JSON、Timestamp、Encoding、UUID/Hash 直接维护在 `dev-box`，不作为插件安装或更新。
-3. 平台不内置 Java 编辑器/Runner；Java 代码片段能力由独立 `devbox-java-runner` 插件提供，平台只提供受控 JShell Host API。SQL Formatter、JWT、正则测试和 HTTP Client 仍不实现。
+3. 平台不内置 Java 编辑器/Runner；Java 代码片段能力由 `plugins/java-runner` 官方插件提供，平台只提供受控 JShell Host API。SQL Formatter、JWT、正则测试和 HTTP Client 仍不实现。
 4. 不提供在线插件目录、在线安装或自动更新，只允许用户选择本地 ZIP 安装自定义插件。
 5. 允许安装未签名 ZIP，但安装前和安装后必须持续展示安全警告；不设置开发者模式开关。
 6. 所有插件包仍执行路径、大小、压缩比、结构、入口和兼容性检查；存在签名时继续验证签名。
@@ -88,6 +88,7 @@ flowchart TB
 - ZIP 解析、兼容性判断、可选签名验证、安装、升级、卸载、回退和恢复。
 - 插件附属 WebView、身份绑定、生命周期、权限网关和 SQLite 数据。
 - `java:execute` 的用户手势校验、输入/超时/输出/并发限制和 JShell 进程管理。
+- 官方插件的源码、测试和独立 ZIP 发布；第三方插件不进入此仓库。
 
 推荐目录：
 
@@ -110,10 +111,16 @@ dev-box/
 │  ├─ ipc-contracts/
 │  ├─ ui/
 │  └─ plugin-pack/
+├─ plugins/
+│  ├─ foundation/                 # 随桌面应用编译的 native 插件
+│  ├─ java-runner/                # 独立 ZIP 发布的官方 UI 插件
+│  └─ api-payload-extractor/      # 独立 ZIP 发布的官方 UI 插件
 └─ fixtures/
 ```
 
 `devbox-tools` 中的四个工具迁移完成后删除，不再形成独立发布链路。
+
+`plugins/` 中的插件共享根锁文件和公共配置，但禁止相互引用。`type: "native"` 的插件可以进入桌面应用编译注册表；`type: "ui"` 的插件只参与统一校验、测试和 ZIP 打包，运行时仍通过隔离 WebView 安装。每个插件独立维护版本号和兼容范围。
 
 ## 4. 功能注册、导航与 Tab
 

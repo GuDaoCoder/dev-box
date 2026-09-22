@@ -1,0 +1,34 @@
+{
+  "name": "@devbox/plugin-api-payload-extractor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DevBox API payload extractor plugin.",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm typecheck && vite build",
+    "package:zip": "pnpm build && node ../../scripts/package-plugin.mjs .",
+    "typecheck": "tsc --noEmit --pretty false",
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run",
+    "check": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "dependencies": {
+    "@devbox/plugin-sdk": "workspace:*",
+    "lucide-react": "^0.544.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^5.0.1"
+  }
+}

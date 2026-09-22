@@ -9,6 +9,12 @@ import type {
   SettingRecord,
 } from "@devbox/ipc-contracts";
 
+export type {
+  JavaEnvironment,
+  JavaExecutionRequest,
+  JavaExecutionResult,
+} from "@devbox/ipc-contracts";
+
 export type SupportedLocale = "en-US" | "zh-CN";
 
 export interface Disposable {

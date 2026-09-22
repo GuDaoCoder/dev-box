@@ -1,5 +1,14 @@
 # DevBox ZIP 插件开发指南
 
+## 仓库模式
+
+- DevBox 官方插件位于主仓库 `plugins/`，共享根锁文件、SDK、配置和 CI，但各自独立构建与发布 ZIP。
+- 第三方插件可以保留独立 Git 仓库，通过发布的 `@devbox/plugin-sdk` 和 `@devbox/plugin-pack` 开发。
+- 插件之间不能直接引用；公共协议、组件或配置应放入 `packages/`。
+- 主仓库中的 `type: "native"` 插件可随桌面应用编译，`type: "ui"` 插件只生成可安装 ZIP。
+
+官方插件可在仓库根目录统一执行 `pnpm plugins:build` 和 `pnpm plugins:pack`，产物写入根目录 `release/`。
+
 ## 最小目录
 
 ```text

@@ -34,6 +34,14 @@ for (const namespace of namespaces.filter((file) => file.endsWith(".json"))) {
 
 const pluginDirectories = await readdir(path.join(root, "plugins"), { withFileTypes: true });
 for (const plugin of pluginDirectories.filter((entry) => entry.isDirectory())) {
-  const locales = path.join(root, "plugins", plugin.name, "src/locales");
-  await comparePair(path.join(locales, "en-US.json"), path.join(locales, "zh-CN.json"));
+  const directory = path.join(root, "plugins", plugin.name);
+  const manifest = JSON.parse(await readFile(path.join(directory, "plugin.json"), "utf8"));
+  const englishLocale =
+    manifest.type === "native" ? "src/locales/en-US.json" : manifest.locales?.["en-US"];
+  const chineseLocale =
+    manifest.type === "native" ? "src/locales/zh-CN.json" : manifest.locales?.["zh-CN"];
+  if (!englishLocale || !chineseLocale) {
+    throw new Error(`插件 ${manifest.id} 缺少中英文语言资源声明`);
+  }
+  await comparePair(path.join(directory, englishLocale), path.join(directory, chineseLocale));
 }

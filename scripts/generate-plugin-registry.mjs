@@ -2,6 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
+import { validateManifest } from "../packages/plugin-pack/src/index.mjs";
+
 const root = process.cwd();
 const pluginsDirectory = path.join(root, "plugins");
 const target = path.join(root, "apps/desktop/src/plugins.generated.ts");
@@ -16,8 +18,9 @@ for (const folder of pluginFolders) {
   const directory = path.join(pluginsDirectory, folder);
   const manifest = JSON.parse(await readFile(path.join(directory, "plugin.json"), "utf8"));
   const packageJson = JSON.parse(await readFile(path.join(directory, "package.json"), "utf8"));
-  if (manifest.schemaVersion !== 1 || !/^devbox\.[a-z0-9.-]+$/.test(manifest.id)) {
-    throw new Error(`插件 ${folder} 的 manifest 无效`);
+  validateManifest(manifest);
+  if (packageJson.version !== manifest.version) {
+    throw new Error(`插件 ${manifest.id} 的 package.json 与 plugin.json 版本不一致`);
   }
   if (identifiers.has(manifest.id)) {
     throw new Error(`插件 ID 重复：${manifest.id}`);
@@ -26,10 +29,12 @@ for (const folder of pluginFolders) {
     throw new Error(`插件 ${manifest.id} 缺少 views 声明`);
   }
   identifiers.add(manifest.id);
-  plugins.push({
-    packageName: packageJson.name,
-    exportName: `${folder.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())}Plugin`,
-  });
+  if (manifest.type === "native") {
+    plugins.push({
+      packageName: packageJson.name,
+      exportName: `${folder.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())}Plugin`,
+    });
+  }
 }
 
 const output = `${plugins

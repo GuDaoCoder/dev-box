@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "devbox.api-payload-extractor",
+  "name": "API报文提取",
+  "description": "从 API 日志中提取并格式化 JSON 或 XML 入参。",
+  "version": "0.1.0",
+  "publisher": {
+    "id": "devbox",
+    "name": "DevBox Official"
+  },
+  "engines": {
+    "devbox": ">=0.1.0, <0.2.0",
+    "pluginApi": "^1.0.0"
+  },
+  "type": "ui",
+  "entry": {
+    "main": "dist/index.html"
+  },
+  "activationEvents": ["onView:api-payload-extractor"],
+  "permissions": [],
+  "locales": {
+    "zh-CN": "locales/zh-CN.json",
+    "en-US": "locales/en-US.json"
+  },
+  "contributes": {
+    "views": [
+      {
+        "id": "api-payload-extractor",
+        "titleKey": "apiPayloadExtractor.title",
+        "icon": "braces",
+        "order": 10,
+        "category": {
+          "id": "picc-tools",
+          "title": {
+            "zh-CN": "PICC工具",
+            "en-US": "PICC Tools"
+          },
+          "order": 40
+        }
+      }
+    ]
+  }
+}
