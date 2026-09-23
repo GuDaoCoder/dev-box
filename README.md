@@ -4,7 +4,7 @@ DevBox 是一个本地优先的跨平台开发者工具箱，使用 Tauri 2、Re
 
 当前内置 JSON、时间戳、编码转换、UUID 与哈希工具；自定义功能可通过本地 ZIP 插件扩展。平台不提供在线插件目录，未签名插件允许安装，但会持续显示安全警告。
 
-官方插件与主程序在同一 monorepo 中维护，位于 `plugins/`，但仍分别构建和发布 ZIP。第三方插件可使用公开 SDK 在独立仓库开发。
+可独立安装的官方插件维护在同级 `devbox-plugins` monorepo；本仓库只保留主体程序、Host API、公开 SDK 和随主体编译的 native 插件。
 
 ## 环境要求
 
@@ -28,16 +28,12 @@ pnpm tauri dev
 ```sh
 pnpm check
 pnpm build
-pnpm plugins:build
-pnpm plugins:pack
 pnpm test:e2e
 pnpm check:release
 pnpm tauri build
 ```
 
 `pnpm check:release` 包含版本、语言、安全配置、格式、类型、单元测试、前端产物预算以及 Rust fmt、clippy 和测试。`pnpm tauri build` 在当前平台生成安装包。
-
-`pnpm plugins:pack` 会在根目录 `release/` 中为每个可发布 UI 插件生成独立 ZIP。
 
 ## 文档
 

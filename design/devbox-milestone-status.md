@@ -86,7 +86,7 @@
 
 状态：**J-M3 已完成，待验收**
 
-- [x] `plugins/java-runner` 官方 UI 插件、Java 语法高亮和中英文界面
+- [x] `devbox-plugins/plugins/java-runner` 官方 UI 插件、Java 语法高亮和中英文界面
 - [x] `java:execute` Plugin API、安装安全警告和一次性用户手势校验
 - [x] 系统 JDK 11+ / JShell 发现、当前版本展示、固定启动参数和结构化结果
 - [x] 64 KiB 输入、5 秒超时、256 KiB 输出和单插件单并发限制

@@ -2,12 +2,12 @@
 
 ## 仓库模式
 
-- DevBox 官方插件位于主仓库 `plugins/`，共享根锁文件、SDK、配置和 CI，但各自独立构建与发布 ZIP。
+- 可独立安装的 DevBox 官方插件位于单独的 `devbox-plugins` monorepo，共享锁文件、配置和 CI，但各自独立构建与发布 ZIP。
 - 第三方插件可以保留独立 Git 仓库，通过发布的 `@devbox/plugin-sdk` 和 `@devbox/plugin-pack` 开发。
-- 插件之间不能直接引用；公共协议、组件或配置应放入 `packages/`。
-- 主仓库中的 `type: "native"` 插件可随桌面应用编译，`type: "ui"` 插件只生成可安装 ZIP。
+- 官方 UI 插件之间不能直接引用；公共类型、组件或配置应放入 `devbox-plugins/packages/`。
+- 本仓库 `plugins/` 下只保留随桌面应用编译的 `type: "native"` 插件；`type: "ui"` 插件属于 `devbox-plugins`。
 
-官方插件可在仓库根目录统一执行 `pnpm plugins:build` 和 `pnpm plugins:pack`，产物写入根目录 `release/`。
+官方 UI 插件应在 `devbox-plugins` 仓库执行 `pnpm plugins:build` 和 `pnpm plugins:pack`，产物写入该仓库的 `release/`。
 
 ## 最小目录
 

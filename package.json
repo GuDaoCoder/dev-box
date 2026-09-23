@@ -20,8 +20,6 @@
     "tauri": "pnpm --filter @devbox/desktop tauri",
     "plugins:generate": "node scripts/generate-plugin-registry.mjs",
     "plugins:check": "node scripts/generate-plugin-registry.mjs --check",
-    "plugins:build": "pnpm --filter './plugins/**' --if-present build",
-    "plugins:pack": "pnpm --filter './plugins/**' --if-present package:zip",
     "fixtures:m2": "node scripts/build-m2-fixtures.mjs",
     "sdk:pack": "pnpm --filter @devbox/ipc-contracts --filter @devbox/plugin-sdk --filter @devbox/ui --filter @devbox/plugin-pack pack",
     "locales:check": "node scripts/check-locales.mjs",

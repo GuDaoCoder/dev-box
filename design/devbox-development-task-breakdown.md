@@ -2,9 +2,9 @@
 
 > 输入文档：`devbox-architecture-design.md`、`devbox-ui-design-spec.md`
 >
-> 更新日期：2026-09-19
+> 更新日期：2026-09-23
 >
-> 仓库：统一使用 `dev-box`
+> 仓库：主体使用 `dev-box`；可安装官方插件使用 `devbox-plugins`
 >
 > 明确排除：在线插件安装、平台内置 Java 编辑器/Runner、SQL Formatter、JWT、正则测试、HTTP Client
 
@@ -18,7 +18,7 @@
 | M3 工作区与内置工具重构 | 已完成并验收 | 落实二级树、多 Tab、四个内置工具、本地 ZIP | 本文第 5 节验收项全部通过 |
 | M4 稳定性与发布 | 已完成并验收 | 三平台发布、安全与可访问性收口 | 自动检查通过，实机项纳入首次发布门禁 |
 
-原 `devbox-tools` 内容迁入后删除。Java 代码片段功能作为 `plugins/java-runner` 官方 UI 插件维护，通过公开 Plugin API 接入，不回迁为平台内置工具，也不编译进桌面应用。
+原 `devbox-tools` 内容迁入后删除。Java 代码片段功能作为 `devbox-plugins/plugins/java-runner` 官方 UI 插件维护，通过公开 Plugin API 接入，不回迁为平台内置工具，也不编译进桌面应用。
 
 ## 2. 通用完成定义
 
@@ -143,7 +143,7 @@ M2 中的在线目录和专用 `.devbox-plugin` 入口已在 M3 调整中移除�
 
 ## 7. 官方 UI 插件：Java Snippet Runner
 
-该扩展不改变 DevBox 的内置工具边界。monorepo 内的插件目录负责编辑器和交互，DevBox Host 仅负责受控能力；插件继续独立构建和发布 ZIP。
+该扩展不改变 DevBox 的内置工具边界。`devbox-plugins` 仓库负责编辑器、交互、测试和 ZIP 发布，`dev-box` Host 仅负责受控能力。
 
 | 里程碑 | 状态 | 内容 |
 |---|---|---|
