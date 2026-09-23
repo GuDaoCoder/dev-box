@@ -238,6 +238,16 @@ function App() {
   }, [closeTab, featureById, tabs]);
 
   useEffect(() => {
+    if (!activeTabId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(workspaceDomId("workspace-tab", activeTabId))
+        ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTabId, tabs]);
+
+  useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === "k") {
         event.preventDefault();
@@ -437,7 +447,22 @@ function App() {
         </aside>
 
         <section aria-label={t("workspace.label")} className="main-workspace tab-workspace">
-          <div aria-label={t("workspace.openTabs")} className="workspace-tabs" role="tablist">
+          <div
+            aria-label={t("workspace.openTabs")}
+            className="workspace-tabs"
+            onWheel={(event) => {
+              const element = event.currentTarget;
+              if (
+                element.scrollWidth <= element.clientWidth ||
+                Math.abs(event.deltaX) >= Math.abs(event.deltaY)
+              ) {
+                return;
+              }
+              event.preventDefault();
+              element.scrollLeft += event.deltaY;
+            }}
+            role="tablist"
+          >
             {tabs.map((tabId) => {
               const feature = featureById.get(tabId);
               if (!feature) return null;
@@ -544,7 +569,7 @@ function App() {
                   <div
                     aria-hidden={!active}
                     aria-labelledby={workspaceDomId("workspace-tab", tabId)}
-                    className="workspace-panel"
+                    className={`workspace-panel${feature.plugin ? " plugin-workspace-panel" : ""}`}
                     hidden={!active}
                     id={workspaceDomId("workspace-panel", tabId)}
                     key={tabId}

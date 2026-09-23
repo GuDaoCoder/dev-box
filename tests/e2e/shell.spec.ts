@@ -31,6 +31,34 @@ test("使用多标签打开工具并进入本地插件管理", async ({ page }) 
   await expect(page.getByRole("tab", { name: /Online/ })).toHaveCount(0);
 });
 
+test("窗口缩放时标签栏和应用壳层不显示系统滚动条", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 600 });
+  await page.goto("/");
+
+  for (const name of [
+    "Timestamp Tool",
+    "Encoding Tool",
+    "UUID & Hash",
+    "Plugin Manager",
+    "Settings",
+  ]) {
+    await page.getByRole("button", { name }).click();
+  }
+
+  const tabList = page.getByRole("tablist", { name: "Open features" });
+  await expect(tabList).toHaveCSS("overflow-y", "hidden");
+  await expect(tabList).toHaveCSS("scrollbar-width", "none");
+  expect(
+    await tabList.evaluate((element) => element.scrollWidth > element.clientWidth),
+  ).toBeTruthy();
+  expect(
+    await page.evaluate(() => ({
+      horizontal: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      vertical: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    })),
+  ).toEqual({ horizontal: false, vertical: false });
+});
+
 test("使用键盘切换标签并在设置中切换语言", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Timestamp Tool" }).click();
