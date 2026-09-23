@@ -18,13 +18,10 @@ import {
   type TimestampResult,
 } from "./algorithms";
 
-function ToolHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
+function ToolHeader({ title }: { title: string }) {
   return (
     <header className="page-header tool-page-header">
-      <div>
-        <span className="page-eyebrow">{eyebrow}</span>
-        <h1>{title}</h1>
-      </div>
+      <h1>{title}</h1>
     </header>
   );
 }
@@ -72,8 +69,8 @@ export function JsonToolView() {
   }
 
   return (
-    <section className="tool-page">
-      <ToolHeader eyebrow="DATA · JSON" title={t("tools.json.title")} />
+    <section className="tool-page tool-page--editor">
+      <ToolHeader title={t("tools.json.title")} />
       <ToolActionBar
         actions={
           <>
@@ -187,7 +184,7 @@ export function TimestampToolView() {
   }
   return (
     <section className="tool-page">
-      <ToolHeader eyebrow="TIME · UNIX" title={t("tools.timestamp.title")} />
+      <ToolHeader title={t("tools.timestamp.title")} />
       <div className="surface-card tool-form">
         <div className="tool-form-grid">
           <label>
@@ -262,8 +259,8 @@ export function EncodingToolView() {
     }
   }
   return (
-    <section className="tool-page">
-      <ToolHeader eyebrow="TEXT · CODEC" title={t("tools.encoding.title")} />
+    <section className="tool-page tool-page--editor">
+      <ToolHeader title={t("tools.encoding.title")} />
       <ToolActionBar
         actions={
           <>
@@ -378,7 +375,7 @@ export function UuidHashToolView() {
   }
   return (
     <section className="tool-page">
-      <ToolHeader eyebrow="IDENTITY · DIGEST" title={t("tools.uuid.title")} />
+      <ToolHeader title={t("tools.uuid.title")} />
       <div className="segmented-control tool-mode-switcher" role="tablist">
         <Button
           aria-selected={mode === "uuid"}

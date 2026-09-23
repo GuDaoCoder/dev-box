@@ -59,6 +59,26 @@ test("窗口缩放时标签栏和应用壳层不显示系统滚动条", async ({
   ).toEqual({ horizontal: false, vertical: false });
 });
 
+test("功能页隐藏分类路径并让编辑区占满剩余空间", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto("/");
+
+  await expect(page.locator(".page-eyebrow")).toHaveCount(0);
+  const layout = await page.locator(".tool-page--editor").evaluate((toolPage) => {
+    const editorGrid = toolPage.querySelector<HTMLElement>(".tool-editor-grid");
+    if (!editorGrid) throw new Error("未找到编辑区");
+    const pageRect = toolPage.getBoundingClientRect();
+    const gridRect = editorGrid.getBoundingClientRect();
+    return {
+      bottomGap: Math.round(pageRect.bottom - gridRect.bottom),
+      gridRatio: gridRect.height / pageRect.height,
+    };
+  });
+
+  expect(layout.bottomGap).toBeLessThanOrEqual(24);
+  expect(layout.gridRatio).toBeGreaterThan(0.55);
+});
+
 test("使用键盘切换标签并在设置中切换语言", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Timestamp Tool" }).click();

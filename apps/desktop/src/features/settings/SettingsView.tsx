@@ -29,10 +29,7 @@ export function SettingsView() {
   return (
     <section className="plugin-page" aria-labelledby="settings-title">
       <header className="page-header">
-        <div>
-          <p className="page-eyebrow">DEVBOX</p>
-          <h1 id="settings-title">{t("title")}</h1>
-        </div>
+        <h1 id="settings-title">{t("title")}</h1>
       </header>
 
       <div className="settings-stack">

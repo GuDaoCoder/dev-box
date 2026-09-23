@@ -100,10 +100,7 @@ export function PluginCenterView({
   return (
     <div className="plugin-page plugin-center">
       <header className="page-header">
-        <div>
-          <span className="page-eyebrow">{t("pluginCenter.eyebrow")}</span>
-          <h1>{t("pluginCenter.title")}</h1>
-        </div>
+        <h1>{t("pluginCenter.title")}</h1>
       </header>
 
       <div aria-label={t("pluginCenter.title")} className="plugin-tabs" role="tablist">

@@ -232,7 +232,7 @@ textarea:focus-visible,
   gap: 24px;
 }
 .page-header h1 {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: clamp(28px, 4vw, 40px);
   line-height: 1.1;
 }
@@ -241,12 +241,6 @@ textarea:focus-visible,
   margin: 0;
   color: var(--text-muted);
   line-height: 1.55;
-}
-.page-header .page-eyebrow {
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
 }
 .foundation-grid {
   display: grid;
@@ -894,7 +888,13 @@ textarea:focus-visible,
 .tool-page {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 34px 0 48px;
+  padding: 32px 0 24px;
+}
+.tool-page--editor {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
 }
 .tool-page-header {
   margin-bottom: 20px;
@@ -946,12 +946,21 @@ textarea:focus-visible,
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
+.tool-page--editor .tool-editor-grid {
+  min-height: 0;
+  flex: 1;
+}
 .tool-editor {
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-surface);
+}
+.tool-page--editor .tool-editor {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .tool-editor-heading {
   display: flex;
@@ -980,6 +989,11 @@ textarea:focus-visible,
     "SFMono-Regular",
     Consolas,
     monospace;
+}
+.tool-page--editor .tool-editor textarea {
+  height: 100%;
+  min-height: 0;
+  resize: none;
 }
 .tool-form {
   box-shadow: none;
@@ -1114,6 +1128,9 @@ textarea:focus-visible,
   .tool-form-grid,
   .tool-result-list > div {
     grid-template-columns: 1fr;
+  }
+  .tool-page--editor .tool-editor-grid {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
   }
   .tool-option-group {
     width: 100%;
