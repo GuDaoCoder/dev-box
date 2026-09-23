@@ -27,6 +27,7 @@
     "accessibility:check": "node scripts/check-color-contrast.mjs",
     "performance:check": "node scripts/check-bundle-size.mjs",
     "version:check": "node scripts/check-version.mjs",
+    "version:set": "node scripts/set-version.mjs",
     "check": "pnpm version:check && pnpm plugins:check && pnpm locales:check && pnpm security:check && pnpm accessibility:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit",
     "check:release": "pnpm check && pnpm build && pnpm performance:check && cargo fmt --all --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --workspace"
   },

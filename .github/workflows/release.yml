@@ -1,32 +1,38 @@
-name: Release artifacts
+name: Release
 
 on:
   push:
     tags: ["app-v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing app-v* tag to publish
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
-  desktop-bundle:
-    name: Bundle (${{ matrix.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Windows with WebView2
-            os: windows-latest
-            artifact: Windows-WebView2
-          - name: macOS without WebView2
-            os: macos-latest
-            artifact: macOS
-    runs-on: ${{ matrix.os }}
+  validate:
+    name: Validate release
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - uses: pnpm/action-setup@v4
         with:
           version: 12.4.2
@@ -39,27 +45,135 @@ jobs:
           distribution: temurin
           java-version: "11"
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: . -> target
       - run: pnpm install --frozen-lockfile
+      - run: node scripts/check-release-tag.mjs "$RELEASE_TAG"
       - run: pnpm check:release
-      - name: Verify release tag
-        if: startsWith(github.ref, 'refs/tags/')
-        shell: bash
-        run: node scripts/check-release-tag.mjs "$GITHUB_REF_NAME"
-      - run: pnpm tauri build
-      - name: Read application version
-        id: version
-        shell: bash
-        run: node -e "console.log('version=' + require('./package.json').version)" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows ${{ matrix.label }}
+    needs: validate
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: WebView2 Offline
+            suffix: webview2-offline
+            config: src-tauri/tauri.windows-webview2-offline.conf.json
+          - label: System WebView2
+            suffix: system-webview2
+            config: src-tauri/tauri.windows-system-webview2.conf.json
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+      - run: pnpm install --frozen-lockfile
+      - name: Build installers
+        run: pnpm tauri build --config ${{ matrix.config }}
+      - name: Normalize artifact names
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $exe = Get-ChildItem target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
+          $msi = Get-ChildItem target/release/bundle/msi -Filter *.msi | Select-Object -First 1
+          if (-not $exe -or -not $msi) { throw "Windows installer output is incomplete" }
+          Copy-Item $exe.FullName "release-assets/DevBox-$version-windows-x64-${{ matrix.suffix }}-setup.exe"
+          Copy-Item $msi.FullName "release-assets/DevBox-$version-windows-x64-${{ matrix.suffix }}.msi"
       - uses: actions/upload-artifact@v4
         with:
-          name: devbox-${{ steps.version.outputs.version }}-${{ matrix.artifact }}-${{ runner.arch }}
-          path: |
-            target/release/bundle/**/*.dmg
-            target/release/bundle/**/*.msi
-            target/release/bundle/**/*-setup.exe
+          name: release-windows-${{ matrix.suffix }}
+          path: release-assets/*
           if-no-files-found: error
           compression-level: 0
-          retention-days: 30
+          retention-days: 7
+
+  macos:
+    name: macOS ${{ matrix.arch }}
+    needs: validate
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            target: aarch64-apple-darwin
+          - arch: x86_64
+            target: x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+      - run: pnpm install --frozen-lockfile
+      - name: Build disk image
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles dmg
+      - name: Normalize artifact name
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          source=$(find "target/${{ matrix.target }}/release/bundle/dmg" -name '*.dmg' -print -quit)
+          test -n "$source"
+          mkdir -p release-assets
+          cp "$source" "release-assets/DevBox-$version-macos-${{ matrix.arch }}.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-${{ matrix.arch }}
+          path: release-assets/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: [windows, macos]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: release-assets
+        run: sha256sum * > SHA256SUMS.txt
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${RELEASE_TAG#app-v}"
+          gh release create "$RELEASE_TAG" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --generate-notes \
+            --title "DevBox $version"

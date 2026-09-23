@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import type { InstalledPlugin } from "@devbox/ipc-contracts";
 import { Kbd, StatusDot } from "@devbox/ui";
 
+import desktopPackage from "../package.json";
 import "./App.css";
 import devboxMark from "./assets/devbox-mark.svg";
 import {
@@ -597,7 +598,7 @@ function App() {
         <span className="status-separator" />
         <span>{t("status.plugins", { count: plugins.length })}</span>
         <span className="status-spacer" />
-        <span>v0.1.0</span>
+        <span>v{desktopPackage.version}</span>
       </footer>
       {paletteOpen ? <CommandPalette features={features} /> : null}
     </main>
