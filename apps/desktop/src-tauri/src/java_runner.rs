@@ -324,6 +324,9 @@ fn drain_output<R: Read + Send + 'static>(
 mod tests {
     use super::*;
 
+    // CI 中首次启动 JShell 可能较慢；测试等待时间不改变用户代码的超时上限。
+    const JSHELL_TEST_TIMEOUT_MS: u64 = 30_000;
+
     #[test]
     fn 同一插件同时只能运行一个片段() {
         let service = Arc::new(JavaRunnerService::default());
@@ -391,7 +394,7 @@ mod tests {
             &jshell.executable,
             &working_directory,
             "System.out.println(6 * 7);",
-            MAX_TIMEOUT_MS,
+            JSHELL_TEST_TIMEOUT_MS,
             16 * 1024,
         )
         .expect("JShell 应成功执行");
@@ -412,7 +415,7 @@ mod tests {
             &jshell.executable,
             &working_directory,
             "int value = ;",
-            MAX_TIMEOUT_MS,
+            JSHELL_TEST_TIMEOUT_MS,
             16 * 1024,
         )
         .expect("JShell 应返回执行结果");
@@ -433,7 +436,7 @@ mod tests {
             &jshell.executable,
             &working_directory,
             "throw new RuntimeException(\"boom\");",
-            MAX_TIMEOUT_MS,
+            JSHELL_TEST_TIMEOUT_MS,
             16 * 1024,
         )
         .expect("JShell 应返回执行结果");
