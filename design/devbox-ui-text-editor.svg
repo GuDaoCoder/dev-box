@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">DevBox 轻量文本编辑器界面设计</title>
+  <desc id="desc">深色主题桌面界面，左侧是 DevBox 功能导航，工作区内左侧是项目文件树，右侧是多文件标签、查找替换栏和带语法高亮的 YAML 编辑器。</desc>
+  <style>
+    .ui { font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .mono { font-family: "SFMono-Regular", Menlo, Consolas, monospace; }
+    .text { fill: #e8edf2; }
+    .muted { fill: #8b98a7; }
+    .dim { fill: #657382; }
+    .accent { fill: #43c6e8; }
+    .tiny { font-size: 12px; }
+    .small { font-size: 13px; }
+    .body { font-size: 14px; }
+    .label { font-size: 15px; font-weight: 600; }
+    .code { font-size: 16px; }
+    .line { stroke: #263241; stroke-width: 1; }
+    .icon { fill: none; stroke: #8b98a7; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-bright { fill: none; stroke: #e8edf2; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+
+  <rect width="1600" height="1000" fill="#0b0f14"/>
+  <rect x="0" y="0" width="1600" height="56" fill="#111821"/>
+  <line x1="0" y1="56" x2="1600" y2="56" class="line"/>
+  <rect x="17" y="12" width="32" height="32" rx="8" fill="#43c6e8"/>
+  <g fill="none" stroke="#08202a" stroke-width="2" stroke-linejoin="round">
+    <path d="M25 21l8-4 8 4v12l-8 4-8-4z"/>
+    <path d="M25 21l8 5 8-5M33 26v11"/>
+  </g>
+  <text x="62" y="28" class="ui text label">DevBox</text>
+  <text x="62" y="45" class="ui muted tiny">本地开发者工具箱</text>
+  <rect x="535" y="11" width="530" height="34" rx="8" fill="#17212c" stroke="#263241"/>
+  <circle cx="556" cy="27" r="6" class="icon"/>
+  <path d="M560 31l5 5" class="icon"/>
+  <text x="578" y="32" class="ui muted body">搜索功能与命令</text>
+  <rect x="1015" y="17" width="38" height="23" rx="4" fill="#111821" stroke="#263241"/>
+  <text x="1022" y="33" class="mono muted tiny">⌘ K</text>
+  <path d="M1558 18a10 10 0 1 0 12 14 9 9 0 0 1-12-14z" fill="none" stroke="#e8edf2" stroke-width="2"/>
+
+  <rect x="0" y="56" width="255" height="916" fill="#111821"/>
+  <line x1="255" y1="56" x2="255" y2="972" class="line"/>
+  <g class="ui">
+    <path d="M25 101l5 5 5-5" class="icon"/>
+    <text x="44" y="106" class="text small" font-weight="600">数据处理</text>
+    <text x="52" y="145" class="muted body">{ }　JSON 工具</text>
+    <path d="M25 191l5 5 5-5" class="icon"/>
+    <text x="44" y="196" class="text small" font-weight="600">时间与编码</text>
+    <text x="52" y="235" class="muted body">◷　时间戳工具</text>
+    <text x="52" y="273" class="muted body">⌗　编码转换</text>
+    <path d="M25 319l5 5 5-5" class="icon"/>
+    <text x="44" y="324" class="text small" font-weight="600">标识与摘要</text>
+    <text x="52" y="363" class="muted body">◎　UUID 与哈希</text>
+    <path d="M25 409l5 5 5-5" class="icon"/>
+    <text x="44" y="414" class="text small" font-weight="600">文件与文本</text>
+    <rect x="18" y="431" width="219" height="42" rx="8" fill="#202c39"/>
+    <rect x="18" y="431" width="3" height="42" rx="1.5" fill="#43c6e8"/>
+    <path d="M47 443h13l4 4v15H47zM60 443v5h5" class="icon-bright"/>
+    <text x="76" y="458" class="text body">文本编辑器</text>
+    <path d="M25 512l5 5 5-5" class="icon"/>
+    <text x="44" y="517" class="text small" font-weight="600">插件</text>
+    <text x="52" y="556" class="muted body">▦　插件管理</text>
+    <path d="M25 602l5 5 5-5" class="icon"/>
+    <text x="44" y="607" class="text small" font-weight="600">系统</text>
+    <text x="52" y="646" class="muted body">⚙　设置</text>
+    <text x="23" y="949" class="dim tiny">内置工具 · 本地文件</text>
+  </g>
+
+  <rect x="255" y="56" width="1345" height="42" fill="#111821"/>
+  <line x1="255" y1="98" x2="1600" y2="98" class="line"/>
+  <rect x="255" y="56" width="184" height="42" fill="#0b0f14"/>
+  <rect x="255" y="56" width="184" height="3" fill="#43c6e8"/>
+  <text x="271" y="83" class="ui text body">▤　文本编辑器</text>
+  <text x="412" y="83" class="ui muted body">×</text>
+  <text x="457" y="83" class="ui muted body">{ }　JSON 工具　×</text>
+
+  <text x="279" y="144" class="ui text" font-size="25" font-weight="650">文本编辑器</text>
+  <rect x="1305" y="117" width="270" height="33" rx="7" fill="#111821" stroke="#263241"/>
+  <path d="M1320 130h10l3 3h12v8h-25z" fill="none" stroke="#8b98a7" stroke-width="1.5"/>
+  <text x="1354" y="138" class="mono muted small">picc-service</text>
+  <text x="1552" y="138" class="ui muted body">⌄</text>
+
+  <rect x="279" y="164" width="84" height="36" rx="7" fill="#43c6e8"/>
+  <text x="298" y="188" class="ui" font-size="14" font-weight="650" fill="#061016">保存</text>
+  <rect x="375" y="164" width="104" height="36" rx="7" fill="#17212c" stroke="#263241"/>
+  <text x="390" y="188" class="ui text body">打开目录</text>
+  <rect x="491" y="164" width="36" height="36" rx="7" fill="#17212c" stroke="#263241"/>
+  <text x="501" y="188" class="ui muted" font-size="19">↶</text>
+  <rect x="535" y="164" width="36" height="36" rx="7" fill="#17212c" stroke="#263241"/>
+  <text x="545" y="188" class="ui muted" font-size="19">↷</text>
+  <line x1="590" y1="168" x2="590" y2="196" class="line"/>
+  <rect x="605" y="174" width="17" height="17" rx="4" fill="#43c6e8"/>
+  <path d="M609 182l4 4 6-8" fill="none" stroke="#061016" stroke-width="2"/>
+  <text x="631" y="188" class="ui muted body">自动换行</text>
+  <text x="1492" y="188" class="ui muted small">⌘ F 查找</text>
+
+  <rect x="279" y="216" width="261" height="738" rx="10" fill="#111821" stroke="#263241"/>
+  <rect x="550" y="216" width="1025" height="738" rx="10" fill="#111821" stroke="#263241"/>
+
+  <text x="299" y="246" class="ui text label">项目文件</text>
+  <text x="497" y="246" class="ui muted body">⋯</text>
+  <line x1="279" y1="260" x2="540" y2="260" class="line"/>
+  <g class="ui body">
+    <path d="M298 285l5 5 5-5" class="icon"/>
+    <path d="M316 281h11l4 4h12v14h-27z" fill="#d8ae6f"/>
+    <text x="352" y="294" class="text">picc-service</text>
+    <path d="M315 323l5 5 5-5" class="icon"/>
+    <path d="M333 319h11l4 4h12v14h-27z" fill="#d8ae6f"/>
+    <text x="369" y="332" class="text">src</text>
+    <path d="M331 361l5 5 5-5" class="icon"/>
+    <path d="M349 357h11l4 4h12v14h-27z" fill="#d8ae6f"/>
+    <text x="385" y="370" class="text">main</text>
+    <path d="M347 399l5 5 5-5" class="icon"/>
+    <path d="M365 395h11l4 4h12v14h-27z" fill="#d8ae6f"/>
+    <text x="401" y="408" class="text">java</text>
+    <path d="M382 436h12l3 3v12h-15z" fill="none" stroke="#8b98a7" stroke-width="1.4"/>
+    <text x="406" y="447" class="muted small">Application.java</text>
+    <path d="M347 475l5 5 5-5" class="icon"/>
+    <path d="M365 471h11l4 4h12v14h-27z" fill="#d8ae6f"/>
+    <text x="401" y="484" class="text">resources</text>
+    <rect x="286" y="500" width="247" height="35" rx="6" fill="#202c39"/>
+    <path d="M382 508h12l3 3v15h-15z" fill="none" stroke="#43c6e8" stroke-width="1.4"/>
+    <text x="406" y="523" class="text small">application.yml</text>
+    <path d="M382 547h12l3 3v15h-15z" fill="none" stroke="#8b98a7" stroke-width="1.4"/>
+    <text x="406" y="562" class="muted small">schema.sql</text>
+    <path d="M316 585h12l3 3v15h-15z" fill="none" stroke="#8b98a7" stroke-width="1.4"/>
+    <text x="340" y="600" class="muted small">README.md</text>
+    <path d="M316 623h12l3 3v15h-15z" fill="none" stroke="#8b98a7" stroke-width="1.4"/>
+    <text x="340" y="638" class="muted small">pom.xml</text>
+  </g>
+  <line x1="357" y1="386" x2="357" y2="490" stroke="#344555" stroke-width="1"/>
+  <line x1="372" y1="493" x2="372" y2="569" stroke="#344555" stroke-width="1"/>
+
+  <rect x="550" y="216" width="1025" height="42" rx="10" fill="#17212c"/>
+  <rect x="550" y="248" width="1025" height="10" fill="#17212c"/>
+  <line x1="550" y1="258" x2="1575" y2="258" class="line"/>
+  <text x="570" y="243" class="ui muted small">schema.sql　×</text>
+  <line x1="684" y1="216" x2="684" y2="258" class="line"/>
+  <text x="700" y="243" class="ui muted small">Application.java　×</text>
+  <line x1="856" y1="216" x2="856" y2="258" class="line"/>
+  <rect x="857" y="216" width="180" height="42" fill="#111821"/>
+  <rect x="857" y="216" width="180" height="3" fill="#43c6e8"/>
+  <text x="874" y="243" class="ui text small">application.yml</text>
+  <circle cx="993" cy="237" r="4" fill="#f2b84b"/>
+  <text x="1015" y="243" class="ui muted small">×</text>
+  <line x1="1037" y1="216" x2="1037" y2="258" class="line"/>
+  <text x="1054" y="243" class="ui muted small">README.md　×</text>
+
+  <rect x="550" y="258" width="1025" height="93" fill="#17212c"/>
+  <text x="570" y="283" class="ui text small" font-weight="600">查找与替换</text>
+  <text x="1542" y="283" class="ui muted body">×</text>
+  <rect x="570" y="292" width="370" height="34" rx="6" fill="#111821" stroke="#43c6e8"/>
+  <text x="583" y="314" class="mono text small">server</text>
+  <text x="894" y="314" class="ui muted tiny">1 / 1</text>
+  <rect x="949" y="292" width="286" height="34" rx="6" fill="#111821" stroke="#263241"/>
+  <text x="962" y="314" class="mono muted small">替换为…</text>
+  <rect x="1247" y="292" width="76" height="34" rx="6" fill="#202c39"/>
+  <text x="1266" y="314" class="ui text small">替换</text>
+  <rect x="1331" y="292" width="90" height="34" rx="6" fill="#202c39"/>
+  <text x="1347" y="314" class="ui text small">全部替换</text>
+  <text x="1440" y="314" class="ui muted body">↑　↓</text>
+  <text x="580" y="343" class="ui muted tiny">区分大小写　　全词匹配　　正则表达式</text>
+  <line x1="550" y1="351" x2="1575" y2="351" class="line"/>
+
+  <rect x="551" y="352" width="53" height="571" fill="#111821"/>
+  <line x1="604" y1="352" x2="604" y2="923" class="line"/>
+  <rect x="604" y="477" width="948" height="28" fill="#1b2a36"/>
+  <rect x="620" y="370" width="57" height="23" rx="3" fill="#5d4b2a"/>
+  <g class="mono code">
+    <text x="576" y="388" class="dim">1</text>
+    <text x="620" y="388"><tspan fill="#9ecdf2">server</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="576" y="416" class="dim">2</text>
+    <text x="650" y="416"><tspan fill="#9ecdf2">port</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#a9d98a">8080</tspan></text>
+    <text x="576" y="444" class="dim">3</text>
+    <text x="650" y="444"><tspan fill="#9ecdf2">servlet</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="576" y="472" class="dim">4</text>
+    <text x="680" y="472"><tspan fill="#9ecdf2">context-path</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#efb87f">/api</tspan></text>
+    <text x="576" y="500" class="dim">5</text>
+    <text x="620" y="500"><tspan fill="#9ecdf2">spring</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="576" y="528" class="dim">6</text>
+    <text x="650" y="528"><tspan fill="#9ecdf2">application</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="576" y="556" class="dim">7</text>
+    <text x="680" y="556"><tspan fill="#9ecdf2">name</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#efb87f">picc-service</tspan></text>
+    <text x="576" y="584" class="dim">8</text>
+    <text x="650" y="584"><tspan fill="#9ecdf2">datasource</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="576" y="612" class="dim">9</text>
+    <text x="680" y="612"><tspan fill="#9ecdf2">url</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#efb87f">jdbc:postgresql://localhost:5432/picc</tspan></text>
+    <text x="566" y="640" class="dim">10</text>
+    <text x="680" y="640"><tspan fill="#9ecdf2">username</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#efb87f">app_user</tspan></text>
+    <text x="566" y="668" class="dim">11</text>
+    <text x="680" y="668"><tspan fill="#9ecdf2">password</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#c5a5e9">${DB_PASSWORD}</tspan></text>
+    <text x="566" y="696" class="dim">12</text>
+    <text x="620" y="696"><tspan fill="#9ecdf2">logging</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="566" y="724" class="dim">13</text>
+    <text x="650" y="724"><tspan fill="#9ecdf2">level</tspan><tspan fill="#e8edf2">:</tspan></text>
+    <text x="566" y="752" class="dim">14</text>
+    <text x="680" y="752"><tspan fill="#9ecdf2">com.picc</tspan><tspan fill="#e8edf2">: </tspan><tspan fill="#a9d98a">INFO</tspan></text>
+  </g>
+  <rect x="1557" y="361" width="5" height="546" rx="2.5" fill="#17212c"/>
+  <rect x="1557" y="361" width="5" height="207" rx="2.5" fill="#344555"/>
+
+  <line x1="550" y1="923" x2="1575" y2="923" class="line"/>
+  <text x="570" y="943" class="ui muted tiny">● 未保存</text>
+  <text x="1200" y="943" class="mono muted tiny">行 7, 列 18　·　空格: 2　·　UTF-8　·　LF　·　YAML</text>
+
+  <rect x="0" y="972" width="1600" height="28" fill="#111821"/>
+  <line x1="0" y1="972" x2="1600" y2="972" class="line"/>
+  <circle cx="18" cy="986" r="4" fill="#55d6a7"/>
+  <text x="30" y="991" class="ui muted tiny">就绪</text>
+  <text x="100" y="991" class="ui muted tiny">2 个插件</text>
+  <text x="1510" y="991" class="ui muted tiny">v0.1.1</text>
+</svg>
