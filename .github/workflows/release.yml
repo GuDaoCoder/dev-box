@@ -29,6 +29,15 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      - name: Verify tag commit was merged into main
+        shell: bash
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main || {
+            echo "::error::发布标签必须指向已通过 PR 合并到 main 的提交"
+            exit 1
+          }
       - name: Install Linux dependencies
         run: |
           sudo apt-get update

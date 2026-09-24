@@ -35,6 +35,10 @@ pnpm tauri build
 
 `pnpm check:release` 包含版本、语言、安全配置、格式、类型、单元测试、前端产物预算以及 Rust fmt、clippy 和测试。`pnpm tauri build` 在当前平台生成安装包。
 
+## 分支与发布
+
+日常开发和版本号修改都在 `dev` 分支进行。向 `main` 提交 PR，通过 CI 后合并；不要直接向 `main` 推送开发提交。合并后，在对应的 `main` 提交上创建并推送 `app-v<版本>` 标签。只有该标签对应的提交已包含在 `main` 中，Release 工作流才会构建并发布 Windows 与 macOS 安装包。合并 PR 本身不会自动创建 Release。
+
 ## 文档
 
 - [中文用户指南](./docs/user-guide.zh-CN.md) / [English User Guide](./docs/user-guide.en-US.md)
