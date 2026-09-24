@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@devbox/ui";
+import { ActionButton, Button, CopyButton } from "@devbox/ui";
 
 import {
   formatInTimeZone,
@@ -35,10 +35,6 @@ function ToolActionBar({ actions, options }: { actions: ReactNode; options?: Rea
   );
 }
 
-async function copyText(value: string) {
-  if (value) await navigator.clipboard.writeText(value);
-}
-
 export function JsonToolView() {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
@@ -69,17 +65,19 @@ export function JsonToolView() {
   }
 
   return (
-    <section className="tool-page tool-page--editor">
+    <section className="devbox-page devbox-page--fluid tool-page tool-page--editor">
       <ToolHeader title={t("tools.json.title")} />
       <ToolActionBar
         actions={
           <>
-            <Button variant="primary" onClick={() => run(false)}>
+            <ActionButton action="format" variant="primary" onClick={() => run(false)}>
               {t("tools.json.format")}
-            </Button>
-            <Button onClick={() => run(true)}>{t("tools.json.compact")}</Button>
-            <Button
-              variant="ghost"
+            </ActionButton>
+            <ActionButton action="compact" onClick={() => run(true)}>
+              {t("tools.json.compact")}
+            </ActionButton>
+            <ActionButton
+              action="clear"
               onClick={() => {
                 setInput("");
                 setOutput("");
@@ -87,7 +85,7 @@ export function JsonToolView() {
               }}
             >
               {t("actions.clear")}
-            </Button>
+            </ActionButton>
           </>
         }
         options={
@@ -132,9 +130,11 @@ export function JsonToolView() {
         <article className="tool-editor">
           <div className="tool-editor-heading">
             <strong>{t("tools.common.output")}</strong>
-            <Button disabled={!output} variant="ghost" onClick={() => void copyText(output)}>
-              {t("actions.copy")}
-            </Button>
+            <CopyButton
+              copiedLabel={t("actions.copied")}
+              label={t("actions.copy")}
+              value={output}
+            />
           </div>
           <textarea
             aria-label={t("tools.common.output")}
@@ -183,7 +183,7 @@ export function TimestampToolView() {
     }
   }
   return (
-    <section className="tool-page">
+    <section className="devbox-page devbox-page--form tool-page">
       <ToolHeader title={t("tools.timestamp.title")} />
       <div className="surface-card tool-form">
         <div className="tool-form-grid">
@@ -211,10 +211,11 @@ export function TimestampToolView() {
         <ToolActionBar
           actions={
             <>
-              <Button variant="primary" onClick={() => convert()}>
+              <ActionButton action="convert" variant="primary" onClick={() => convert()}>
                 {t("actions.convert")}
-              </Button>
-              <Button
+              </ActionButton>
+              <ActionButton
+                action="now"
                 onClick={() => {
                   const value = String(Math.trunc(Date.now() / 1000));
                   setInput(value);
@@ -222,7 +223,7 @@ export function TimestampToolView() {
                 }}
               >
                 {t("tools.timestamp.now")}
-              </Button>
+              </ActionButton>
             </>
           }
         />
@@ -232,9 +233,11 @@ export function TimestampToolView() {
             <div key={label}>
               <dt>{label}</dt>
               <dd>{value}</dd>
-              <Button variant="ghost" onClick={() => void copyText(value)}>
-                {t("actions.copy")}
-              </Button>
+              <CopyButton
+                copiedLabel={t("actions.copied")}
+                label={t("actions.copy")}
+                value={value}
+              />
             </div>
           ))}
         </dl>
@@ -259,15 +262,16 @@ export function EncodingToolView() {
     }
   }
   return (
-    <section className="tool-page tool-page--editor">
+    <section className="devbox-page devbox-page--fluid tool-page tool-page--editor">
       <ToolHeader title={t("tools.encoding.title")} />
       <ToolActionBar
         actions={
           <>
-            <Button variant="primary" onClick={run}>
+            <ActionButton action="convert" variant="primary" onClick={run}>
               {t(direction === "encode" ? "tools.encoding.encode" : "tools.encoding.decode")}
-            </Button>
-            <Button
+            </ActionButton>
+            <ActionButton
+              action="swap"
               onClick={() => {
                 setInput(output);
                 setOutput(input);
@@ -275,9 +279,9 @@ export function EncodingToolView() {
               }}
             >
               {t("actions.swap")}
-            </Button>
-            <Button
-              variant="ghost"
+            </ActionButton>
+            <ActionButton
+              action="clear"
               onClick={() => {
                 setInput("");
                 setOutput("");
@@ -285,7 +289,7 @@ export function EncodingToolView() {
               }}
             >
               {t("actions.clear")}
-            </Button>
+            </ActionButton>
           </>
         }
         options={
@@ -343,9 +347,11 @@ export function EncodingToolView() {
         <article className="tool-editor">
           <div className="tool-editor-heading">
             <strong>{t("tools.common.output")}</strong>
-            <Button disabled={!output} variant="ghost" onClick={() => void copyText(output)}>
-              {t("actions.copy")}
-            </Button>
+            <CopyButton
+              copiedLabel={t("actions.copied")}
+              label={t("actions.copy")}
+              value={output}
+            />
           </div>
           <textarea aria-label={t("tools.common.output")} readOnly value={output} />
         </article>
@@ -374,7 +380,7 @@ export function UuidHashToolView() {
     }
   }
   return (
-    <section className="tool-page">
+    <section className="devbox-page devbox-page--form tool-page">
       <ToolHeader title={t("tools.uuid.title")} />
       <div className="segmented-control tool-mode-switcher" role="tablist">
         <Button
@@ -411,19 +417,17 @@ export function UuidHashToolView() {
                 onChange={(event) => setCount(event.currentTarget.value)}
               />
             </label>
-            <Button variant="primary" onClick={generate}>
+            <ActionButton action="generate" variant="primary" onClick={generate}>
               {t("tools.uuid.generate")}
-            </Button>
+            </ActionButton>
           </div>
           <div className="tool-editor-heading">
             <strong>UUID v4</strong>
-            <Button
-              disabled={!uuidOutput}
-              variant="ghost"
-              onClick={() => void copyText(uuidOutput)}
-            >
-              {t("actions.copy")}
-            </Button>
+            <CopyButton
+              copiedLabel={t("actions.copied")}
+              label={t("actions.copy")}
+              value={uuidOutput}
+            />
           </div>
           <textarea
             className="tool-standalone-output"
@@ -474,34 +478,33 @@ export function UuidHashToolView() {
           <ToolActionBar
             actions={
               <>
-                <Button
+                <ActionButton
+                  action="calculate"
                   variant="primary"
                   onClick={() => void hashText(input, algorithm, encoding).then(setHashOutput)}
                 >
                   {t("tools.uuid.calculate")}
-                </Button>
-                <Button
-                  variant="ghost"
+                </ActionButton>
+                <ActionButton
+                  action="clear"
                   onClick={() => {
                     setInput("");
                     setHashOutput("");
                   }}
                 >
                   {t("actions.clear")}
-                </Button>
+                </ActionButton>
               </>
             }
           />
           <div className="tool-output-block">
             <div className="tool-editor-heading">
               <strong>{t("tools.common.output")}</strong>
-              <Button
-                disabled={!hashOutput}
-                variant="ghost"
-                onClick={() => void copyText(hashOutput)}
-              >
-                {t("actions.copy")}
-              </Button>
+              <CopyButton
+                copiedLabel={t("actions.copied")}
+                label={t("actions.copy")}
+                value={hashOutput}
+              />
             </div>
             <output className="tool-hash-output">{hashOutput}</output>
           </div>

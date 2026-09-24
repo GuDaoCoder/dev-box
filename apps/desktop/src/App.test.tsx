@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { shortcutLabelForPlatform } from "@devbox/ui/shortcuts";
 
 import App from "./App";
 import i18n from "./i18n";
@@ -39,7 +40,28 @@ describe("App", () => {
         .getAllByRole("button")
         .map((button) => button.textContent),
     ).toEqual(["Format", "Compact", "Clear"]);
+    expect(
+      within(actionBar as HTMLElement)
+        .getAllByRole("button")
+        .every((button) => button.querySelector("svg")),
+    ).toBe(true);
     expect(within(actionBar as HTMLElement).getAllByRole("checkbox")).toHaveLength(2);
+  });
+
+  it("文本结果可以通过统一按钮复制", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<App />);
+    await screen.findByRole("heading", { name: "JSON Tool" });
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Input" }), {
+      target: { value: '{"value":1}' },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Format" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('{\n  "value": 1\n}'));
+    expect(screen.getByRole("button", { name: "Copied" })).toBeVisible();
   });
 
   it("文本类工具默认不填充示例数据", async () => {
@@ -132,6 +154,12 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
 
     expect(await screen.findByRole("dialog", { name: "Command palette" })).toBeVisible();
+  });
+
+  it("根据操作系统显示快捷键提示", () => {
+    expect(shortcutLabelForPlatform("Macintosh", "k")).toBe("⌘ K");
+    expect(shortcutLabelForPlatform("Windows NT 10.0", "k")).toBe("Ctrl K");
+    expect(shortcutLabelForPlatform("Linux", "k")).toBe("Ctrl K");
   });
 
   it("插件中心只提供本地 ZIP 安装入口", async () => {

@@ -4,11 +4,15 @@ import {
   CircleAlert,
   FolderOpen,
   PackageOpen,
+  PackagePlus,
   Play,
+  Power,
+  PowerOff,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
   Trash2,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -98,7 +102,7 @@ export function PluginCenterView({
   }
 
   return (
-    <div className="plugin-page plugin-center">
+    <div className="devbox-page devbox-page--form plugin-page plugin-center">
       <header className="page-header">
         <h1>{t("pluginCenter.title")}</h1>
       </header>
@@ -159,13 +163,20 @@ export function PluginCenterView({
                 <div className="plugin-actions">
                   <Button
                     disabled={busy || !plugin.enabled || !plugin.manifest.contributes.views.length}
+                    icon={<Play aria-hidden="true" size={15} />}
                     onClick={() => onOpenPlugin(plugin)}
                   >
-                    <Play aria-hidden="true" size={15} />
                     {t("pluginCenter.actions.open")}
                   </Button>
                   <Button
                     disabled={busy}
+                    icon={
+                      plugin.enabled ? (
+                        <PowerOff aria-hidden="true" size={15} />
+                      ) : (
+                        <Power aria-hidden="true" size={15} />
+                      )
+                    }
                     onClick={() =>
                       void run(async () =>
                         applyPlugins(await pluginAdminAPI.setEnabled(plugin.id, !plugin.enabled)),
@@ -181,20 +192,20 @@ export function PluginCenterView({
                   </Button>
                   <Button
                     disabled={busy || !plugin.previousVersion}
+                    icon={<RotateCcw aria-hidden="true" size={15} />}
                     onClick={() =>
                       void run(async () => applyPlugins(await pluginAdminAPI.rollback(plugin.id)))
                     }
                     variant="ghost"
                   >
-                    <RotateCcw aria-hidden="true" size={15} />
                     {t("pluginCenter.actions.rollback")}
                   </Button>
                   <Button
                     disabled={busy}
+                    icon={<Trash2 aria-hidden="true" size={15} />}
                     onClick={() => void run(() => uninstallPlugin(plugin))}
                     variant="danger"
                   >
-                    <Trash2 aria-hidden="true" size={15} />
                     {t("pluginCenter.actions.uninstall")}
                   </Button>
                 </div>
@@ -218,8 +229,12 @@ export function PluginCenterView({
             <ShieldAlert aria-hidden="true" size={20} />
             <span>{t("pluginCenter.offline.unsignedWarning")}</span>
           </div>
-          <Button disabled={busy} onClick={() => void run(choosePackage)} variant="primary">
-            <FolderOpen aria-hidden="true" size={16} />
+          <Button
+            disabled={busy}
+            icon={<FolderOpen aria-hidden="true" size={16} />}
+            onClick={() => void run(choosePackage)}
+            variant="primary"
+          >
             {t("pluginCenter.actions.choosePackage")}
           </Button>
         </section>
@@ -289,10 +304,20 @@ export function PluginCenterView({
               </div>
             ) : null}
             <div className="confirmation-actions">
-              <Button disabled={busy} onClick={() => void run(cancelInstall)} variant="ghost">
+              <Button
+                disabled={busy}
+                icon={<X aria-hidden="true" size={14} />}
+                onClick={() => void run(cancelInstall)}
+                variant="ghost"
+              >
                 {t("pluginCenter.actions.cancel")}
               </Button>
-              <Button disabled={busy} onClick={() => void run(confirmInstall)} variant="primary">
+              <Button
+                disabled={busy}
+                icon={<PackagePlus aria-hidden="true" size={14} />}
+                onClick={() => void run(confirmInstall)}
+                variant="primary"
+              >
                 {t("pluginCenter.actions.install")}
               </Button>
             </div>

@@ -1,0 +1,207 @@
+:root {
+  color-scheme: dark;
+  --bg-canvas: #0b0f14;
+  --bg-surface: #111821;
+  --bg-elevated: #17212c;
+  --bg-hover: #202c39;
+  --border: #263241;
+  --text: #e8edf2;
+  --text-muted: #8b98a7;
+  --accent: #43c6e8;
+  --accent-strong: #20a9d0;
+  --success: #55d6a7;
+  --warning: #f2b84b;
+  --danger: #ef6a78;
+  --shadow: rgb(0 0 0 / 32%);
+  --scrollbar-track: #111821;
+  --scrollbar-thumb: #344555;
+  --scrollbar-thumb-hover: #506577;
+
+  /* 兼容已发布插件使用的旧 token，后续插件统一迁移至 --bg-*。 */
+  --canvas: var(--bg-canvas);
+  --surface: var(--bg-surface);
+  --elevated: var(--bg-elevated);
+  --hover: var(--bg-hover);
+  --text-dim: #647181;
+}
+
+:root[data-theme="light"] {
+  color: #17212c;
+  background: #f5f7f9;
+  color-scheme: light;
+  --bg-canvas: #f5f7f9;
+  --bg-surface: #ffffff;
+  --bg-elevated: #eef2f5;
+  --bg-hover: #e5ebef;
+  --border: #d3dce4;
+  --text: #17212c;
+  --text-muted: #657382;
+  --accent: #087da0;
+  --accent-strong: #046984;
+  --success: #16845f;
+  --warning: #9a660e;
+  --danger: #c43d50;
+  --shadow: rgb(35 49 61 / 14%);
+  --scrollbar-track: #eef2f5;
+  --scrollbar-thumb: #adbdca;
+  --scrollbar-thumb-hover: #8498a8;
+  --text-dim: #657382;
+}
+
+/* WebView2 与 WebKit 使用同一语义色；保留可见滚动条便于定位长内容。 */
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--scrollbar-track);
+  border-radius: 9px;
+  background: var(--scrollbar-thumb);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.devbox-page {
+  width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 32px 24px 24px;
+}
+
+.devbox-page--fluid {
+  max-width: none;
+}
+
+.devbox-page--form {
+  max-width: 1228px;
+}
+
+.devbox-page--prose {
+  max-width: 928px;
+}
+
+.ui-button {
+  display: inline-flex;
+  min-height: 34px;
+  padding: 0 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--bg-elevated);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ui-button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.ui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ui-button--primary {
+  border-color: var(--accent-strong);
+  color: #061016;
+  background: var(--accent);
+}
+
+.ui-button--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.ui-button--danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.ui-button__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.ui-icon-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ui-icon-button:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.ui-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ui-kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  font:
+    11px ui-monospace,
+    monospace;
+}
+
+.ui-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 99px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ui-badge--success {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.ui-badge--danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.ui-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+@media (max-width: 600px) {
+  .devbox-page {
+    padding: 28px 14px 20px;
+  }
+}

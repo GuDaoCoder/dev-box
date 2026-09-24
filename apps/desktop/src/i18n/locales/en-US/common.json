@@ -19,6 +19,7 @@
     "close": "Close",
     "clear": "Clear",
     "copy": "Copy",
+    "copied": "Copied",
     "convert": "Convert",
     "swap": "Swap"
   },

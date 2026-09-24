@@ -147,6 +147,9 @@ importers:
 
   packages/ui:
     dependencies:
+      lucide-react:
+        specifier: ^0.544.0
+        version: 0.544.0(react@19.3.0)
       react:
         specifier: '>=19'
         version: 19.3.0

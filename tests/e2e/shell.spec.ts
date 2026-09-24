@@ -79,6 +79,22 @@ test("功能页隐藏分类路径并让编辑区占满剩余空间", async ({ pa
   expect(layout.gridRatio).toBeGreaterThan(0.55);
 });
 
+test("宽屏工作区让双栏编辑区充分利用可用宽度", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/");
+
+  const layout = await page.locator(".tool-page--editor").evaluate((toolPage) => {
+    const parent = toolPage.parentElement;
+    if (!parent) throw new Error("未找到工作区");
+    return {
+      pageWidth: toolPage.getBoundingClientRect().width,
+      workspaceWidth: parent.getBoundingClientRect().width,
+    };
+  });
+
+  expect(layout.pageWidth / layout.workspaceWidth).toBeGreaterThan(0.94);
+});
+
 test("使用键盘切换标签并在设置中切换语言", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Timestamp Tool" }).click();

@@ -12,7 +12,7 @@ import { ChevronDown, ChevronRight, Command, Moon, Search, Sun, X } from "lucide
 import { useTranslation } from "react-i18next";
 
 import type { InstalledPlugin } from "@devbox/ipc-contracts";
-import { Kbd, StatusDot } from "@devbox/ui";
+import { ShortcutKbd, StatusDot } from "@devbox/ui";
 
 import desktopPackage from "../package.json";
 import "./App.css";
@@ -350,6 +350,7 @@ function App() {
         <InstalledPluginPanel
           active={active}
           plugin={feature.plugin}
+          suspended={paletteOpen || Boolean(tabContextMenu)}
           viewId={feature.pluginViewId}
         />
       );
@@ -381,7 +382,7 @@ function App() {
         <button className="search-trigger" onClick={() => setPaletteOpen(true)} type="button">
           <Search aria-hidden="true" size={16} />
           <span>{t("actions.search")}</span>
-          <Kbd>⌘ K</Kbd>
+          <ShortcutKbd keyName="K" />
         </button>
         {theme === "dark" ? (
           <Moon aria-hidden="true" size={16} />

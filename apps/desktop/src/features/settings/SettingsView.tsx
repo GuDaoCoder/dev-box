@@ -27,7 +27,7 @@ export function SettingsView() {
   }
 
   return (
-    <section className="plugin-page" aria-labelledby="settings-title">
+    <section className="devbox-page devbox-page--form plugin-page" aria-labelledby="settings-title">
       <header className="page-header">
         <h1 id="settings-title">{t("title")}</h1>
       </header>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const css = await readFile(new URL("../apps/desktop/src/App.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../packages/ui/src/styles.css", import.meta.url), "utf8");
 
 function tokens(selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
