@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { shortcutLabelForPlatform } from "@devbox/ui/shortcuts";
 
@@ -6,8 +7,23 @@ import App from "./App";
 import i18n from "./i18n";
 import { useAppStore } from "./stores/app-store";
 
+function toolEditor(label: string) {
+  const element = screen.getByRole("textbox", { name: label });
+  const view = EditorView.findFromDOM(element);
+  if (!view) throw new Error(`找不到 ${label} 编辑器`);
+  return view;
+}
+
+function setToolInput(value: string) {
+  const view = toolEditor("Input");
+  act(() => {
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
+  });
+}
+
 describe("App", () => {
   beforeEach(async () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1024 });
     useAppStore.setState({
       activeTabId: "tool.json",
       locale: "en-US",
@@ -27,6 +43,47 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Data" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Timestamp Tool" })).toBeVisible();
     expect(screen.getByText("0 plugins")).toBeVisible();
+  });
+
+  it("可收起整个左侧菜单，重新展开后保留分类状态", () => {
+    render(<App />);
+    const sidebar = screen.getByRole("complementary", { name: "Feature menu" });
+    const category = screen.getByRole("button", { name: "Data" });
+    fireEvent.click(category);
+    expect(category).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide sidebar" }));
+    expect(sidebar).toHaveAttribute("hidden");
+    expect(document.querySelector(".workbench")).toHaveClass("sidebar-collapsed");
+    expect(screen.getByRole("button", { name: "Show sidebar" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Show sidebar" }));
+    expect(sidebar).not.toHaveAttribute("hidden");
+    expect(category).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("窄窗口通过临时侧栏打开功能，并可用 Escape 收起", () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 640 });
+    render(<App />);
+    const sidebar = screen.getByRole("complementary", { hidden: true });
+    expect(sidebar).toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show sidebar" }));
+    expect(sidebar).not.toHaveAttribute("hidden");
+    expect(document.querySelector(".workbench")).toHaveClass("mobile-sidebar-open");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(sidebar).toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
+    expect(sidebar).toHaveAttribute("hidden");
+    expect(screen.getByRole("tab", { name: "Timestamp Tool" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("按操作和选项分组显示 JSON 工具栏", async () => {
@@ -54,9 +111,7 @@ describe("App", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "JSON Tool" });
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Input" }), {
-      target: { value: '{"value":1}' },
-    });
+    setToolInput('{"value":1}');
     fireEvent.click(screen.getByRole("button", { name: "Format" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
 
@@ -67,7 +122,7 @@ describe("App", () => {
   it("文本类工具默认不填充示例数据", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "JSON Tool" });
-    expect(screen.getByRole("textbox", { name: "Input" })).toHaveValue("");
+    expect(toolEditor("Input").state.doc.toString()).toBe("");
 
     fireEvent.click(screen.getByRole("button", { name: "Timestamp Tool" }));
     expect(screen.getByRole("textbox", { name: "Timestamp or date" })).toHaveValue("");
@@ -78,6 +133,53 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "UUID & Hash" }));
     fireEvent.click(screen.getByRole("tab", { name: "Hash" }));
     expect(screen.getByRole("textbox", { name: "Text to hash" })).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "XML Tool" }));
+    expect(await screen.findByRole("heading", { name: "XML Tool" })).toBeVisible();
+    expect(toolEditor("Input").state.doc.toString()).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "SQL Tool" }));
+    expect(await screen.findByRole("heading", { name: "SQL Tool" })).toBeVisible();
+    expect(toolEditor("Input").state.doc.toString()).toBe("");
+  });
+
+  it("XML 工具沿用双栏布局，并在校验失败时保留上次结果", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "XML Tool" }));
+    await screen.findByRole("heading", { name: "XML Tool" });
+    const actionBar = screen.getByRole("button", { name: "Format" }).closest(".tool-action-bar");
+    expect(
+      within(actionBar as HTMLElement)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Format", "Compact", "Validate", "Clear"]);
+
+    setToolInput("<root><item/></root>");
+    fireEvent.click(screen.getByRole("button", { name: "Format" }));
+    expect(toolEditor("Result").state.doc.toString()).toBe("<root>\n  <item/>\n</root>");
+
+    setToolInput("<root>");
+    fireEvent.click(screen.getByRole("button", { name: "Validate" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Invalid XML");
+    expect(toolEditor("Result").state.doc.toString()).toBe("<root>\n  <item/>\n</root>");
+  });
+
+  it("SQL 工具支持方言与大小写选项，但不提供执行入口", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "SQL Tool" }));
+    await screen.findByRole("heading", { name: "SQL Tool" });
+    fireEvent.change(screen.getByRole("combobox", { name: "Dialect" }), {
+      target: { value: "postgresql" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "Keywords" }), {
+      target: { value: "upper" },
+    });
+    setToolInput("select name from users");
+    fireEvent.click(screen.getByRole("button", { name: "Format" }));
+    await waitFor(() =>
+      expect(toolEditor("Result").state.doc.toString()).toBe("SELECT\n  name\nFROM\n  users"),
+    );
+    expect(screen.queryByRole("button", { name: "Run" })).not.toBeInTheDocument();
   });
 
   it("同一功能只打开一个可关闭的工作区标签", async () => {

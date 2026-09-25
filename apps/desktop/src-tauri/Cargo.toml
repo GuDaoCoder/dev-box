@@ -30,6 +30,7 @@ hex = "0.4"
 mime_guess = "2"
 semver = "1"
 sha2 = "0.10"
+encoding_rs = "0.8"
 uuid = { version = "1", features = ["v4"] }
 zip = { version = "6", default-features = false, features = ["deflate"] }
 wait-timeout = "0.2"

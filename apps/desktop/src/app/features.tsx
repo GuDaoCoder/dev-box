@@ -3,15 +3,20 @@ import {
   Binary,
   Blocks,
   Braces,
+  CodeXml,
   Clock3,
+  Database,
   Fingerprint,
+  FileText,
   PackageOpen,
   Settings,
   type LucideIcon,
 } from "lucide-react";
 
 import { PluginCenterView, type PluginCenterViewProps } from "../features/plugins/PluginCenterView";
+import { LazyTextEditorView } from "../features/editor/LazyTextEditorView";
 import { SettingsView } from "../features/settings/SettingsView";
+import { SqlToolView, XmlToolView } from "../features/tools/LazyStructuredTools";
 import {
   EncodingToolView,
   JsonToolView,
@@ -38,6 +43,7 @@ export const featureCategories: readonly FeatureCategory[] = [
   { id: "data", titleKey: "categories.data", order: 10 },
   { id: "conversion", titleKey: "categories.conversion", order: 20 },
   { id: "identity", titleKey: "categories.identity", order: 30 },
+  { id: "files", titleKey: "categories.files", order: 40 },
   { id: "plugins", titleKey: "categories.plugins", order: 80 },
   { id: "system", titleKey: "categories.system", order: 90 },
 ];
@@ -50,6 +56,22 @@ export const builtinFeatures: readonly BuiltinFeature[] = [
     icon: Braces,
     order: 10,
     component: JsonToolView,
+  },
+  {
+    id: "tool.xml",
+    titleKey: "tools.xml.title",
+    categoryId: "data",
+    icon: CodeXml,
+    order: 20,
+    component: XmlToolView,
+  },
+  {
+    id: "tool.sql",
+    titleKey: "tools.sql.title",
+    categoryId: "data",
+    icon: Database,
+    order: 30,
+    component: SqlToolView,
   },
   {
     id: "tool.timestamp",
@@ -74,6 +96,14 @@ export const builtinFeatures: readonly BuiltinFeature[] = [
     icon: Fingerprint,
     order: 10,
     component: UuidHashToolView,
+  },
+  {
+    id: "text-editor",
+    titleKey: "editor.title",
+    categoryId: "files",
+    icon: FileText,
+    order: 10,
+    component: LazyTextEditorView,
   },
   {
     id: "plugin-center",

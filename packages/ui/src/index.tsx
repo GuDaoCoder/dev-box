@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   ArrowRight,
   Calculator,
+  CircleCheck,
   Clipboard,
   Clock3,
   Eraser,
@@ -61,7 +62,8 @@ export type StandardAction =
   | "now"
   | "swap"
   | "generate"
-  | "calculate";
+  | "calculate"
+  | "validate";
 
 const actionIcons = {
   format: WandSparkles,
@@ -75,6 +77,7 @@ const actionIcons = {
   swap: ArrowLeftRight,
   generate: Hash,
   calculate: Calculator,
+  validate: CircleCheck,
 } as const;
 
 export function ActionButton({
