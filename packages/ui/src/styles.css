@@ -16,6 +16,12 @@
   --scrollbar-track: #111821;
   --scrollbar-thumb: #344555;
   --scrollbar-thumb-hover: #506577;
+  --editor-keyword: #9eb9ff;
+  --editor-string: #a6d9a6;
+  --editor-number: #e5b67b;
+  --editor-comment: #81919f;
+  --editor-heading: #72cfe8;
+  --editor-property: #89cde3;
 
   /* 兼容已发布插件使用的旧 token，后续插件统一迁移至 --bg-*。 */
   --canvas: var(--bg-canvas);
@@ -45,6 +51,12 @@
   --scrollbar-track: #eef2f5;
   --scrollbar-thumb: #adbdca;
   --scrollbar-thumb-hover: #8498a8;
+  --editor-keyword: #3c5dbc;
+  --editor-string: #287a47;
+  --editor-number: #9b531e;
+  --editor-comment: #687784;
+  --editor-heading: #08718c;
+  --editor-property: #0b7091;
   --text-dim: #657382;
 }
 

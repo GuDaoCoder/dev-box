@@ -3,12 +3,23 @@ import {
   type ComponentType,
   type ErrorInfo,
   type ReactNode,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { ChevronDown, ChevronRight, Command, Moon, Search, Sun, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Command,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Sun,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { InstalledPlugin } from "@devbox/ipc-contracts";
@@ -25,6 +36,7 @@ import {
 } from "./app/features";
 import { InstalledPluginPanel } from "./features/plugins/InstalledPluginPanel";
 import { PluginCenterView } from "./features/plugins/PluginCenterView";
+import { canCloseTextEditor } from "./features/editor/close-guard";
 import { applyLocale } from "./i18n";
 import { coreAPI, pluginAdminAPI } from "./ipc/client";
 import { useAppStore } from "./stores/app-store";
@@ -132,6 +144,7 @@ function CommandPalette({ features }: { features: WorkspaceFeature[] }) {
 function App() {
   const { t, i18n } = useTranslation();
   const activeTabId = useAppStore((state) => state.activeTabId);
+  const editorDialogOpen = useAppStore((state) => state.editorDialogOpen);
   const tabs = useAppStore((state) => state.tabs);
   const closeAllTabs = useAppStore((state) => state.closeAllTabs);
   const closeOtherTabs = useAppStore((state) => state.closeOtherTabs);
@@ -146,9 +159,35 @@ function App() {
   const setLocale = useAppStore((state) => state.setLocale);
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [expanded, setExpanded] = useState(() => new Set(featureCategories.map((item) => item.id)));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [narrowViewport, setNarrowViewport] = useState(() => window.innerWidth <= 760);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [draggedTab, setDraggedTab] = useState<string>();
   const [tabContextMenu, setTabContextMenu] = useState<TabContextMenuState>();
   const tabContextMenuRef = useRef<HTMLDivElement>(null);
+  const sidebarToggleRef = useRef<HTMLButtonElement>(null);
+  const sidebarVisible = narrowViewport ? mobileSidebarOpen : !sidebarCollapsed;
+
+  useEffect(() => {
+    const updateViewport = () => {
+      const narrow = window.innerWidth <= 760;
+      setNarrowViewport(narrow);
+      if (!narrow) setMobileSidebarOpen(false);
+    };
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMobileSidebarOpen(false);
+      window.requestAnimationFrame(() => sidebarToggleRef.current?.focus());
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileSidebarOpen]);
 
   useEffect(() => {
     void Promise.all([
@@ -282,8 +321,9 @@ function App() {
     };
   }, [tabContextMenu]);
 
-  function runTabMenuAction(action: () => void) {
+  async function runTabMenuAction(removedTabs: string[], action: () => void) {
     setTabContextMenu(undefined);
+    if (removedTabs.includes("text-editor") && !(await canCloseTextEditor())) return;
     action();
   }
 
@@ -294,7 +334,8 @@ function App() {
     });
   }
 
-  function closeTabAndRestoreFocus(tabId: string) {
+  async function closeTabAndRestoreFocus(tabId: string) {
+    if (tabId === "text-editor" && !(await canCloseTextEditor())) return;
     const index = tabs.indexOf(tabId);
     const remaining = tabs.filter((id) => id !== tabId);
     closeTab(tabId);
@@ -305,7 +346,7 @@ function App() {
     const currentIndex = tabs.indexOf(tabId);
     if (event.key === "Delete") {
       event.preventDefault();
-      closeTabAndRestoreFocus(tabId);
+      void closeTabAndRestoreFocus(tabId);
       return;
     }
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
@@ -350,7 +391,9 @@ function App() {
         <InstalledPluginPanel
           active={active}
           plugin={feature.plugin}
-          suspended={paletteOpen || Boolean(tabContextMenu)}
+          suspended={
+            paletteOpen || Boolean(tabContextMenu) || editorDialogOpen || mobileSidebarOpen
+          }
           viewId={feature.pluginViewId}
         />
       );
@@ -391,8 +434,38 @@ function App() {
         )}
       </header>
 
-      <div className="workbench">
-        <aside className="navigation-sidebar feature-tree">
+      <div
+        className={`workbench${sidebarVisible ? "" : " sidebar-collapsed"}${narrowViewport && mobileSidebarOpen ? " mobile-sidebar-open" : ""}`}
+      >
+        {narrowViewport && mobileSidebarOpen ? (
+          <button
+            aria-label={t("navigation.dismissMenu")}
+            className="sidebar-backdrop"
+            onClick={() => setMobileSidebarOpen(false)}
+            type="button"
+          />
+        ) : null}
+        <aside
+          aria-label={t("navigation.menu")}
+          className="navigation-sidebar feature-tree"
+          hidden={!sidebarVisible}
+          id="feature-navigation"
+        >
+          <button
+            aria-controls="feature-navigation"
+            aria-expanded="true"
+            aria-label={t("navigation.hideMenu")}
+            className="sidebar-collapse-button"
+            onClick={() => {
+              if (narrowViewport) setMobileSidebarOpen(false);
+              else setSidebarCollapsed(true);
+            }}
+            ref={sidebarVisible ? sidebarToggleRef : undefined}
+            type="button"
+          >
+            <span>{t("navigation.menu")}</span>
+            <PanelLeftClose aria-hidden="true" size={18} />
+          </button>
           <nav>
             {groups.map((group) => {
               const isExpanded = expanded.has(group.id);
@@ -432,7 +505,10 @@ function App() {
                           <button
                             className={activeTabId === feature.id ? "active" : ""}
                             key={feature.id}
-                            onClick={() => openTab(feature.id)}
+                            onClick={() => {
+                              openTab(feature.id);
+                              if (narrowViewport) setMobileSidebarOpen(false);
+                            }}
                             type="button"
                           >
                             <Icon aria-hidden="true" size={16} />
@@ -449,78 +525,99 @@ function App() {
         </aside>
 
         <section aria-label={t("workspace.label")} className="main-workspace tab-workspace">
-          <div
-            aria-label={t("workspace.openTabs")}
-            className="workspace-tabs"
-            onWheel={(event) => {
-              const element = event.currentTarget;
-              if (
-                element.scrollWidth <= element.clientWidth ||
-                Math.abs(event.deltaX) >= Math.abs(event.deltaY)
-              ) {
-                return;
-              }
-              event.preventDefault();
-              element.scrollLeft += event.deltaY;
-            }}
-            role="tablist"
-          >
-            {tabs.map((tabId) => {
-              const feature = featureById.get(tabId);
-              if (!feature) return null;
-              const Icon = feature.icon;
-              return (
-                <div
-                  className={`workspace-tab${activeTabId === tabId ? " active" : ""}`}
-                  draggable
-                  key={tabId}
-                  onDragStart={() => setDraggedTab(tabId)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const menuWidth = 208;
-                    const menuHeight = 156;
-                    setTabContextMenu({
-                      tabId,
-                      x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8)),
-                      y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 8)),
-                    });
-                  }}
-                  onDrop={() => {
-                    if (draggedTab) reorderTab(draggedTab, tabId);
-                    setDraggedTab(undefined);
-                  }}
-                >
-                  <button
-                    aria-controls={workspaceDomId("workspace-panel", tabId)}
-                    aria-selected={activeTabId === tabId}
-                    className="workspace-tab-button"
-                    id={workspaceDomId("workspace-tab", tabId)}
-                    onClick={() => openTab(tabId)}
-                    onKeyDown={(event) => handleWorkspaceTabKeyDown(event, tabId)}
-                    role="tab"
-                    tabIndex={activeTabId === tabId ? 0 : -1}
-                    type="button"
-                  >
-                    <Icon aria-hidden="true" size={14} />
-                    <span>{feature.title}</span>
-                  </button>
-                  <button
-                    aria-label={t("workspace.closeTab", { name: feature.title })}
-                    className="tab-close"
-                    onClick={(event) => {
+          <div className="workspace-tab-header">
+            {!sidebarVisible ? (
+              <button
+                aria-controls="feature-navigation"
+                aria-expanded="false"
+                aria-label={t("navigation.showMenu")}
+                className="sidebar-expand-button"
+                onClick={() => {
+                  if (narrowViewport) setMobileSidebarOpen(true);
+                  else setSidebarCollapsed(false);
+                }}
+                ref={sidebarToggleRef}
+                type="button"
+              >
+                <PanelLeftOpen aria-hidden="true" size={18} />
+              </button>
+            ) : null}
+            <div
+              aria-label={t("workspace.openTabs")}
+              className="workspace-tabs"
+              onWheel={(event) => {
+                const element = event.currentTarget;
+                if (
+                  element.scrollWidth <= element.clientWidth ||
+                  Math.abs(event.deltaX) >= Math.abs(event.deltaY)
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                element.scrollLeft += event.deltaY;
+              }}
+              role="tablist"
+            >
+              {tabs.map((tabId) => {
+                const feature = featureById.get(tabId);
+                if (!feature) return null;
+                const Icon = feature.icon;
+                return (
+                  <div
+                    className={`workspace-tab${activeTabId === tabId ? " active" : ""}`}
+                    draggable
+                    key={tabId}
+                    onDragStart={() => setDraggedTab(tabId)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
                       event.stopPropagation();
-                      closeTabAndRestoreFocus(tabId);
+                      const menuWidth = 208;
+                      const menuHeight = 156;
+                      setTabContextMenu({
+                        tabId,
+                        x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8)),
+                        y: Math.max(
+                          8,
+                          Math.min(event.clientY, window.innerHeight - menuHeight - 8),
+                        ),
+                      });
                     }}
-                    tabIndex={activeTabId === tabId ? 0 : -1}
-                    type="button"
+                    onDrop={() => {
+                      if (draggedTab) reorderTab(draggedTab, tabId);
+                      setDraggedTab(undefined);
+                    }}
                   >
-                    <X aria-hidden="true" size={13} />
-                  </button>
-                </div>
-              );
-            })}
+                    <button
+                      aria-controls={workspaceDomId("workspace-panel", tabId)}
+                      aria-selected={activeTabId === tabId}
+                      className="workspace-tab-button"
+                      id={workspaceDomId("workspace-tab", tabId)}
+                      onClick={() => openTab(tabId)}
+                      onKeyDown={(event) => handleWorkspaceTabKeyDown(event, tabId)}
+                      role="tab"
+                      tabIndex={activeTabId === tabId ? 0 : -1}
+                      type="button"
+                    >
+                      <Icon aria-hidden="true" size={14} />
+                      <span>{feature.title}</span>
+                    </button>
+                    <button
+                      aria-label={t("workspace.closeTab", { name: feature.title })}
+                      className="tab-close"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void closeTabAndRestoreFocus(tabId);
+                      }}
+                      tabIndex={activeTabId === tabId ? 0 : -1}
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={13} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           {tabContextMenu ? (
             <div
@@ -534,18 +631,30 @@ function App() {
               style={{ left: tabContextMenu.x, top: tabContextMenu.y }}
             >
               <button
-                onClick={() => runTabMenuAction(() => closeTab(tabContextMenu.tabId))}
+                onClick={() =>
+                  void runTabMenuAction([tabContextMenu.tabId], () =>
+                    closeTab(tabContextMenu.tabId),
+                  )
+                }
                 role="menuitem"
                 type="button"
               >
                 {t("workspace.tabMenu.closeCurrent")}
               </button>
-              <button onClick={() => runTabMenuAction(closeAllTabs)} role="menuitem" type="button">
+              <button
+                onClick={() => void runTabMenuAction(tabs, closeAllTabs)}
+                role="menuitem"
+                type="button"
+              >
                 {t("workspace.tabMenu.closeAll")}
               </button>
               <button
                 disabled={tabs.indexOf(tabContextMenu.tabId) === tabs.length - 1}
-                onClick={() => runTabMenuAction(() => closeTabsToRight(tabContextMenu.tabId))}
+                onClick={() =>
+                  void runTabMenuAction(tabs.slice(tabs.indexOf(tabContextMenu.tabId) + 1), () =>
+                    closeTabsToRight(tabContextMenu.tabId),
+                  )
+                }
                 role="menuitem"
                 type="button"
               >
@@ -553,7 +662,12 @@ function App() {
               </button>
               <button
                 disabled={tabs.length <= 1}
-                onClick={() => runTabMenuAction(() => closeOtherTabs(tabContextMenu.tabId))}
+                onClick={() =>
+                  void runTabMenuAction(
+                    tabs.filter((id) => id !== tabContextMenu.tabId),
+                    () => closeOtherTabs(tabContextMenu.tabId),
+                  )
+                }
                 role="menuitem"
                 type="button"
               >
@@ -578,7 +692,11 @@ function App() {
                     role="tabpanel"
                   >
                     <FeatureErrorBoundary fallback={t("errors.pluginRender")}>
-                      {renderFeature(feature, active)}
+                      <Suspense
+                        fallback={<div className="workspace-empty">{t("editor.loading")}</div>}
+                      >
+                        {renderFeature(feature, active)}
+                      </Suspense>
                     </FeatureErrorBoundary>
                   </div>
                 );

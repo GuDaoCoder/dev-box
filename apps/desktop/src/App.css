@@ -108,22 +108,52 @@ textarea:focus-visible,
   margin-left: auto;
 }
 .workbench {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   grid-template-columns: 250px minmax(0, 1fr);
 }
+.workbench.sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+.navigation-sidebar[hidden] {
+  display: none;
+}
+.sidebar-backdrop {
+  display: none;
+}
 .navigation-sidebar {
   display: flex;
   min-width: 0;
   min-height: 0;
-  padding: 18px 12px 12px;
-  overflow-y: auto;
+  overflow: hidden;
   flex-direction: column;
-  overscroll-behavior: contain;
   border-right: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-surface) 78%, var(--bg-canvas));
+}
+.sidebar-collapse-button {
+  display: flex;
+  width: 100%;
+  height: 38px;
+  padding: 0 16px;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sidebar-collapse-button:hover,
+.sidebar-expand-button:hover {
+  color: var(--text);
+  background: var(--bg-hover);
 }
 .nav-section-title {
   margin: 0 8px 10px;
@@ -135,7 +165,13 @@ textarea:focus-visible,
 }
 .navigation-sidebar nav {
   display: grid;
+  min-height: 0;
+  padding: 12px 12px;
+  overflow-y: auto;
+  flex: 1;
+  align-content: start;
   gap: 8px;
+  overscroll-behavior: contain;
 }
 .navigation-sidebar nav button {
   display: flex;
@@ -647,9 +683,27 @@ textarea:focus-visible,
   overflow: hidden;
   grid-template-rows: 38px minmax(0, 1fr);
 }
+.workspace-tab-header {
+  display: flex;
+  min-width: 0;
+  height: 38px;
+}
+.sidebar-expand-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
 .workspace-tabs {
   display: flex;
   min-width: 0;
+  flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -830,6 +884,13 @@ textarea:focus-visible,
 .tool-option-group input {
   margin: 0;
 }
+.tool-option-select {
+  width: auto;
+  max-width: 180px;
+  height: 34px;
+  padding: 0 8px;
+  color: var(--text);
+}
 .tool-mode-switcher {
   width: fit-content;
   margin: 14px 0;
@@ -896,6 +957,41 @@ textarea:focus-visible,
   height: 100%;
   min-height: 0;
   resize: none;
+}
+.tool-code-host,
+.tool-code-host .cm-editor {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.tool-code-host {
+  overflow: hidden;
+}
+.tool-code-host .cm-editor {
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg-canvas) 72%, var(--bg-surface));
+  font:
+    13px/1.6 ui-monospace,
+    "SFMono-Regular",
+    Consolas,
+    monospace;
+}
+.tool-code-host .cm-editor.cm-focused {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.tool-code-host .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+}
+.tool-code-host .cm-content {
+  min-height: 100%;
+  padding: 14px;
+  caret-color: var(--text);
+}
+.tool-code-host .cm-selectionBackground {
+  background: color-mix(in srgb, var(--accent) 30%, transparent) !important;
 }
 .tool-form {
   box-shadow: none;
@@ -988,6 +1084,12 @@ textarea:focus-visible,
 }
 
 @media (max-width: 760px) {
+  .titlebar {
+    gap: 8px;
+  }
+  .brand-copy {
+    min-width: 0;
+  }
   .brand-copy span,
   .navigation-sidebar {
     display: none;
@@ -995,9 +1097,27 @@ textarea:focus-visible,
   .workbench {
     grid-template-columns: minmax(0, 1fr);
   }
+  .sidebar-backdrop {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgb(0 0 0 / 38%);
+  }
+  .workbench.mobile-sidebar-open .navigation-sidebar {
+    position: absolute;
+    z-index: 21;
+    inset: 0 auto 0 0;
+    display: flex;
+    width: min(280px, calc(100vw - 48px));
+    box-shadow: 12px 0 28px var(--shadow);
+  }
   .search-trigger {
     width: auto;
     flex: 1;
+    min-width: 0;
   }
   .search-trigger > span {
     display: none;

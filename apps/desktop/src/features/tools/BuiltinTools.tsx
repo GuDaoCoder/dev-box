@@ -17,8 +17,9 @@ import {
   type HashEncoding,
   type TimestampResult,
 } from "./algorithms";
+import { LazyHighlightedText } from "./LazyHighlightedText";
 
-function ToolHeader({ title }: { title: string }) {
+export function ToolHeader({ title }: { title: string }) {
   return (
     <header className="page-header tool-page-header">
       <h1>{title}</h1>
@@ -26,7 +27,7 @@ function ToolHeader({ title }: { title: string }) {
   );
 }
 
-function ToolActionBar({ actions, options }: { actions: ReactNode; options?: ReactNode }) {
+export function ToolActionBar({ actions, options }: { actions: ReactNode; options?: ReactNode }) {
   return (
     <div className="tool-action-bar">
       <div className="tool-action-group">{actions}</div>
@@ -120,11 +121,12 @@ export function JsonToolView() {
             <strong>{t("tools.common.input")}</strong>
             <small>{new TextEncoder().encode(input).byteLength.toLocaleString()} B</small>
           </div>
-          <textarea
-            aria-label={t("tools.common.input")}
+          <LazyHighlightedText
+            label={t("tools.common.input")}
+            language="json"
+            onChange={setInput}
             value={input}
-            wrap={wrap ? "soft" : "off"}
-            onChange={(event) => setInput(event.currentTarget.value)}
+            wrap={wrap}
           />
         </article>
         <article className="tool-editor">
@@ -136,11 +138,12 @@ export function JsonToolView() {
               value={output}
             />
           </div>
-          <textarea
-            aria-label={t("tools.common.output")}
+          <LazyHighlightedText
+            label={t("tools.common.output")}
+            language="json"
             readOnly
             value={output}
-            wrap={wrap ? "soft" : "off"}
+            wrap={wrap}
           />
         </article>
       </div>

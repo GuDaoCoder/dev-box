@@ -1,0 +1,625 @@
+.editor-page {
+  container-type: inline-size;
+  --editor-tree-folder-icon: #72bed1;
+  --editor-tree-code-icon: #83c5d7;
+  --editor-tree-data-icon: #d1b47c;
+  --editor-tree-document-icon: #aeb9d9;
+  --editor-tree-config-icon: #96c1a6;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.editor-page[data-theme="light"] {
+  --editor-tree-folder-icon: #287c92;
+  --editor-tree-code-icon: #287895;
+  --editor-tree-data-icon: #866326;
+  --editor-tree-document-icon: #586b98;
+  --editor-tree-config-icon: #427455;
+}
+
+.editor-page-header,
+.editor-toolbar,
+.editor-explorer-heading,
+.editor-status,
+.editor-file-tab,
+.editor-findbar,
+.editor-replace-row {
+  display: flex;
+  align-items: center;
+}
+.editor-page-header {
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+.editor-page-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 15px;
+  min-width: 0;
+}
+.editor-page-header h1 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.editor-page-header span {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-toolbar {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.editor-toolbar-actions,
+.editor-option-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.editor-option-group {
+  min-height: 34px;
+  margin-left: 8px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+}
+.editor-tree-toggle {
+  display: inline-flex;
+}
+.editor-wrap-toggle {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.editor-wrap-toggle input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.editor-alert {
+  color: var(--danger);
+  font-size: 12px;
+}
+.editor-main {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: var(--editor-tree-width) 5px minmax(0, 1fr);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.editor-main.tree-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+.editor-explorer {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+.editor-explorer-heading {
+  min-height: 39px;
+  padding: 0 10px;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.editor-explorer-heading label {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.editor-tree-options {
+  position: relative;
+}
+.editor-tree-options > button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-muted);
+  background: transparent;
+}
+.editor-tree-options > button:hover {
+  background: var(--bg-hover);
+}
+.editor-tree-options-menu {
+  position: absolute;
+  z-index: 3;
+  top: 30px;
+  right: 0;
+  min-width: 150px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 20px var(--shadow);
+}
+.editor-tree-options-menu label {
+  font-size: 11px;
+}
+.editor-explorer-heading input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+}
+.editor-tree-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 5px;
+}
+.editor-tree-row {
+  display: flex;
+  width: 100%;
+  min-height: 29px;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 12px;
+}
+.editor-tree-row:hover {
+  background: color-mix(in srgb, var(--bg-hover) 62%, transparent);
+}
+.editor-tree-row.active {
+  background: var(--bg-hover);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.editor-tree-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.editor-tree-row > svg:first-child {
+  flex: none;
+  color: var(--text-muted);
+}
+.editor-tree-icon {
+  flex: none;
+}
+.editor-tree-icon--folder {
+  color: var(--editor-tree-folder-icon);
+}
+.editor-tree-icon--code {
+  color: var(--editor-tree-code-icon);
+}
+.editor-tree-icon--data {
+  color: var(--editor-tree-data-icon);
+}
+.editor-tree-icon--document {
+  color: var(--editor-tree-document-icon);
+}
+.editor-tree-icon--config {
+  color: var(--editor-tree-config-icon);
+}
+.editor-tree-icon--neutral {
+  color: var(--text-muted);
+}
+.editor-tree-row > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-tree-spacer {
+  width: 13px;
+  flex: none;
+}
+.editor-tree-root {
+  font-weight: 700;
+  color: var(--text);
+}
+.editor-tree-note,
+.editor-tree-error {
+  display: block;
+  padding: 3px 8px 3px 29px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.editor-tree-error {
+  color: var(--danger);
+}
+.editor-tree-error button {
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+}
+.editor-splitter {
+  cursor: col-resize;
+  background: var(--bg-surface);
+}
+.editor-splitter:hover {
+  background: var(--accent);
+}
+.editor-workarea {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  grid-template-rows: 39px min-content minmax(0, 1fr) 27px;
+}
+.editor-file-tabs {
+  display: flex;
+  grid-row: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: thin;
+}
+.editor-file-tab {
+  flex: none;
+  min-width: 115px;
+  max-width: 190px;
+  height: 38px;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.editor-file-tab.active {
+  color: var(--text);
+  background: var(--bg-canvas);
+  box-shadow: inset 0 2px var(--accent);
+}
+.editor-file-tab > button:first-child {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.editor-file-tab > button:first-child > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-dirty-dot {
+  color: var(--accent);
+  font-size: 10px;
+}
+.editor-tab-close {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  margin-right: 3px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+}
+.editor-tab-close:hover {
+  background: var(--bg-hover);
+}
+.editor-findbar {
+  display: flex;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 42px;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.editor-findbar > input,
+.editor-replace-row input {
+  min-width: 90px;
+  width: min(240px, 25vw);
+  height: 27px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-canvas);
+  font-size: 12px;
+}
+.editor-findbar button:not(.ui-button) {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+}
+.editor-findbar button:hover {
+  background: var(--bg-hover);
+}
+.editor-findbar label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.editor-findbar label input {
+  margin: 0;
+}
+.editor-match-count {
+  min-width: 43px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.editor-replace-row {
+  width: 100%;
+  gap: 7px;
+  padding-left: 21px;
+}
+.editor-replace-row .ui-button {
+  min-height: 27px;
+  font-size: 11px;
+}
+.editor-find-error {
+  width: 100%;
+  padding-left: 21px;
+  color: var(--danger);
+}
+.editor-code-region {
+  position: relative;
+  grid-row: 3;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-canvas);
+}
+.editor-code-host,
+.editor-code-host .cm-editor {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.editor-code-host {
+  position: absolute;
+  inset: 0;
+}
+.editor-code-host[hidden] {
+  display: none;
+}
+.editor-code-host .cm-editor {
+  font:
+    13px/1.6 ui-monospace,
+    "SFMono-Regular",
+    Consolas,
+    monospace;
+  color: var(--text);
+  background: var(--bg-canvas);
+}
+.editor-code-host .cm-editor.cm-focused {
+  outline: none;
+}
+.editor-code-host .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+}
+.editor-code-host .cm-gutters {
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
+.editor-code-host .cm-activeLine,
+.editor-code-host .cm-activeLineGutter {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.editor-code-host .cm-selectionBackground {
+  background: color-mix(in srgb, var(--accent) 30%, transparent) !important;
+}
+.editor-code-host .cm-searchMatch {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  outline: 1px solid var(--accent);
+}
+.editor-code-host .cm-searchMatch-selected {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.editor-blank,
+.editor-initial {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.editor-blank {
+  position: absolute;
+  inset: 0;
+}
+.editor-initial {
+  flex: 1;
+}
+.editor-initial p {
+  margin: 0;
+}
+.editor-initial span {
+  color: var(--danger);
+}
+.editor-status {
+  min-width: 0;
+  grid-row: 4;
+  gap: 14px;
+  justify-content: flex-end;
+  padding: 0 10px;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.editor-encoding {
+  position: relative;
+  flex: none;
+}
+.editor-encoding > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.editor-encoding > button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.editor-encoding-menu {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: calc(100% + 6px);
+  display: flex;
+  min-width: 140px;
+  flex-direction: column;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  box-shadow: 0 10px 24px var(--shadow);
+}
+.editor-encoding-menu small {
+  padding: 5px 7px;
+  color: var(--text-muted);
+}
+.editor-encoding-menu button,
+.editor-file-menu button {
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 12px;
+}
+.editor-encoding-menu button:hover,
+.editor-file-menu button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.editor-encoding-menu button[aria-checked="true"] {
+  color: var(--accent);
+}
+.editor-file-menu {
+  position: fixed;
+  z-index: 1002;
+  display: flex;
+  min-width: 170px;
+  flex-direction: column;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  box-shadow: 0 10px 24px var(--shadow);
+}
+.editor-file-menu button:disabled {
+  opacity: 0.45;
+}
+.editor-file-menu-separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+.editor-dialog-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0009;
+}
+.editor-dialog {
+  width: min(450px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--bg-elevated);
+  box-shadow: 0 15px 45px var(--shadow);
+}
+.editor-dialog h2 {
+  margin: 0 0 15px;
+  font-size: 17px;
+}
+.editor-dialog p {
+  color: var(--text-muted);
+}
+.editor-dialog > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.editor-position-dialog input {
+  width: 100%;
+  min-height: 38px;
+  margin-bottom: 12px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-canvas);
+  color: var(--text);
+}
+.editor-position-dialog small {
+  display: block;
+  margin: -4px 0 10px;
+  color: var(--danger);
+}
+
+@container (max-width: 900px) {
+  .editor-main {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .editor-explorer {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(var(--editor-tree-width), 65%);
+    background: var(--bg-surface);
+    box-shadow: 12px 0 24px var(--shadow);
+  }
+  .editor-splitter {
+    display: none;
+  }
+  .editor-workarea {
+    grid-column: 1;
+  }
+  .editor-page-header h1 {
+    font-size: 24px;
+  }
+}

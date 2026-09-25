@@ -6,6 +6,7 @@ export type ThemePreference = "dark" | "light";
 
 interface AppStore {
   activeTabId?: string;
+  editorDialogOpen: boolean;
   locale: LocalePreference;
   paletteOpen: boolean;
   tabs: string[];
@@ -17,6 +18,7 @@ interface AppStore {
   openTab: (tabId: string) => void;
   reorderTab: (sourceId: string, targetId: string) => void;
   setActiveTabId: (tabId?: string) => void;
+  setEditorDialogOpen: (open: boolean) => void;
   setLocale: (locale: LocalePreference) => void;
   setPaletteOpen: (open: boolean) => void;
   setTheme: (theme: ThemePreference) => void;
@@ -24,6 +26,7 @@ interface AppStore {
 
 export const useAppStore = create<AppStore>((set) => ({
   activeTabId: "tool.json",
+  editorDialogOpen: false,
   locale: "system",
   paletteOpen: false,
   tabs: ["tool.json"],
@@ -65,6 +68,7 @@ export const useAppStore = create<AppStore>((set) => ({
       return { tabs };
     }),
   setActiveTabId: (activeTabId) => set({ activeTabId }),
+  setEditorDialogOpen: (editorDialogOpen) => set({ editorDialogOpen }),
   setLocale: (locale) => set({ locale }),
   setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
   setTheme: (theme) => set({ theme }),
