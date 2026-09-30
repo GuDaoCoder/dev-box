@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use tauri::{
-    AppHandle, LogicalPosition, LogicalSize, Manager, State, Url, Webview, WebviewBuilder,
-    WebviewUrl,
+    webview::Color, AppHandle, LogicalPosition, LogicalSize, Manager, State, Url, Webview,
+    WebviewBuilder, WebviewUrl,
 };
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -13,6 +13,7 @@ use crate::{
     ipc::CommandEnvelope,
     java_runner::{validate_request, JavaExecutionResult},
     repositories::{InstalledPluginRecord, PluginGrantRecord},
+    runtime::PluginViewPlacement,
     state::AppState,
 };
 
@@ -42,6 +43,38 @@ pub struct PluginOpenRequest {
     view_id: String,
     bounds: PluginViewBounds,
     locale: PluginLocale,
+    theme: PluginTheme,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PluginTheme {
+    Dark,
+    Light,
+}
+
+impl PluginTheme {
+    fn background_color(self) -> Color {
+        match self {
+            // 与主窗口 --bg-canvas 保持一致，避免插件 WebView 首次加载时闪白。
+            Self::Dark => Color(11, 15, 20, 255),
+            Self::Light => Color(245, 247, 249, 255),
+        }
+    }
+
+    fn css_background(self) -> &'static str {
+        match self {
+            Self::Dark => "#0b0f14",
+            Self::Light => "#f5f7f9",
+        }
+    }
+
+    fn css_text(self) -> &'static str {
+        match self {
+            Self::Dark => "#8b98a7",
+            Self::Light => "#657382",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -57,6 +90,13 @@ impl PluginLocale {
         match self {
             Self::ZhCn => "zh-CN",
             Self::EnUs => "en-US",
+        }
+    }
+
+    fn loading_label(self) -> &'static str {
+        match self {
+            Self::ZhCn => "正在加载插件…",
+            Self::EnUs => "Loading plugin…",
         }
     }
 }
@@ -245,6 +285,33 @@ fn plugin_view_position(bounds: &PluginViewBounds) -> LogicalPosition<f64> {
     }
 }
 
+fn plugin_view_placement(bounds: &PluginViewBounds) -> PluginViewPlacement {
+    let position = plugin_view_position(bounds);
+    PluginViewPlacement {
+        x: position.x,
+        y: position.y,
+        width: bounds.width,
+        height: bounds.height,
+    }
+}
+
+const PLUGIN_LOADING_VIEW_SIZE: f64 = 1.0;
+
+fn plugin_view_loading_position() -> LogicalPosition<f64> {
+    // WebView2/WKWebView 初始化时可能短暂钳制负坐标，加载期也必须保持极小尺寸。
+    LogicalPosition::new(-2.0, -2.0)
+}
+
+fn plugin_view_loading_size() -> LogicalSize<f64> {
+    LogicalSize::new(PLUGIN_LOADING_VIEW_SIZE, PLUGIN_LOADING_VIEW_SIZE)
+}
+
+fn show_ready_plugin_view(webview: &Webview, placement: PluginViewPlacement) -> tauri::Result<()> {
+    webview.set_position(LogicalPosition::new(placement.x, placement.y))?;
+    webview.set_size(LogicalSize::new(placement.width, placement.height))?;
+    webview.show()
+}
+
 #[tauri::command]
 pub fn plugins_list(
     window: Webview,
@@ -386,6 +453,7 @@ pub fn plugin_uninstall(
 
 #[tauri::command]
 pub fn plugin_report_ready(
+    app: AppHandle,
     window: Webview,
     state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginReadyRequest>,
@@ -397,6 +465,17 @@ pub fn plugin_report_ready(
         &envelope.payload.version,
     ) {
         return Err(DevBoxError::permission_denied(envelope.request_id()));
+    }
+    if let Some(identity) = state.runtime.resolve(window.label()) {
+        if identity.requested_visible {
+            if let (Some(placement), Some(webview)) =
+                (identity.placement, app.get_webview(window.label()))
+            {
+                show_ready_plugin_view(&webview, placement).map_err(|error| {
+                    DevBoxError::internal(envelope.request_id(), error.to_string())
+                })?;
+            }
+        }
     }
     Ok(())
 }
@@ -574,24 +653,44 @@ pub async fn plugin_open(
         return Err(DevBoxError::not_found(envelope.request_id(), "plugin view"));
     }
     let label = plugin_view_label(&plugin.id, &envelope.payload.view_id);
-    let position = plugin_view_position(&envelope.payload.bounds);
+    let placement = plugin_view_placement(&envelope.payload.bounds);
     if let Some(existing) = app.get_webview(&label) {
         let reusable = state.runtime.resolve(&label).is_some_and(|identity| {
             identity.plugin_id == plugin.id && identity.version == plugin.current_version
         });
         if reusable {
-            existing
-                .set_position(position)
-                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-            existing
-                .set_size(LogicalSize::new(
-                    envelope.payload.bounds.width,
-                    envelope.payload.bounds.height,
-                ))
-                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
-            existing
-                .show()
-                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
+            let ready = state
+                .runtime
+                .request_view(&label, placement)
+                .ok_or_else(|| DevBoxError::not_found(envelope.request_id(), "plugin runtime"))?;
+            if ready {
+                show_ready_plugin_view(&existing, placement).map_err(|error| {
+                    DevBoxError::internal(envelope.request_id(), error.to_string())
+                })?;
+            } else {
+                existing
+                    .set_position(plugin_view_loading_position())
+                    .map_err(|error| {
+                        DevBoxError::internal(envelope.request_id(), error.to_string())
+                    })?;
+                existing
+                    .set_size(plugin_view_loading_size())
+                    .map_err(|error| {
+                        DevBoxError::internal(envelope.request_id(), error.to_string())
+                    })?;
+                existing.show().map_err(|error| {
+                    DevBoxError::internal(envelope.request_id(), error.to_string())
+                })?;
+                // 加载完成可能恰好发生在上面的移动过程中，需再同步一次可见位置。
+                if state
+                    .runtime
+                    .is_ready(&label, &plugin.id, &plugin.current_version)
+                {
+                    show_ready_plugin_view(&existing, placement).map_err(|error| {
+                        DevBoxError::internal(envelope.request_id(), error.to_string())
+                    })?;
+                }
+            }
             let locale = serde_json::to_string(envelope.payload.locale.as_str())
                 .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
             existing
@@ -624,6 +723,10 @@ pub async fn plugin_open(
             root,
         )
         .map_err(|reason| DevBoxError::internal(envelope.request_id(), reason))?;
+    state
+        .runtime
+        .request_view(&label, placement)
+        .ok_or_else(|| DevBoxError::not_found(envelope.request_id(), "plugin runtime"))?;
     let url = format!(
         "devbox-plugin://localhost/{}#{}",
         plugin.manifest.entry.main, envelope.payload.view_id
@@ -645,10 +748,19 @@ pub async fn plugin_open(
         "java": java_environment
     })
     .to_string();
+    let loading_label = serde_json::to_string(envelope.payload.locale.loading_label())
+        .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))?;
     let initialization_script = [
         "(()=>{Object.defineProperty(window,'__DEVBOX_PLUGIN__',{value:Object.freeze(",
         &context,
         "),writable:false,configurable:false});",
+        "let __devboxReady=false;const __devboxShowLoading=()=>{if(__devboxReady||!document.body)return;const overlay=document.createElement('div');overlay.id='__devbox_host_loading__';overlay.setAttribute('role','status');overlay.textContent=",
+        &loading_label,
+        ";Object.assign(overlay.style,{position:'fixed',inset:'0',display:'grid',placeItems:'center',zIndex:'2147483647',fontFamily:'system-ui,sans-serif',fontSize:'14px',color:'",
+        envelope.payload.theme.css_text(),
+        "',backgroundColor:'",
+        envelope.payload.theme.css_background(),
+        "',transition:'opacity 200ms ease-out'});document.body.appendChild(overlay)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',__devboxShowLoading,{once:true});else __devboxShowLoading();const __devboxFinishLoading=()=>{__devboxReady=true;const overlay=document.getElementById('__devbox_host_loading__');if(!overlay)return;if(matchMedia('(prefers-reduced-motion: reduce)').matches){overlay.remove();return}requestAnimationFrame(()=>requestAnimationFrame(()=>{overlay.style.opacity='0';setTimeout(()=>overlay.remove(),240)}))};",
         "const __devboxTauriInvoke=window.__TAURI_INTERNALS__.invoke.bind(window.__TAURI_INTERNALS__);const __devboxInvoke=(command,payload={})=>__devboxTauriInvoke(command,{envelope:{apiVersion:1,pluginId:window.__DEVBOX_PLUGIN__.pluginId,requestId:crypto.randomUUID(),payload}});",
         "let __devboxGesture;const __devboxArmGesture=(event)=>{if(event.isTrusted){__devboxGesture=__devboxInvoke('plugin_user_gesture',{bridgeSecret:'",
         &identity.bridge_secret,
@@ -657,33 +769,44 @@ pub async fn plugin_open(
         &identity.bridge_secret,
         "'}).catch(()=>{});addEventListener('error',__devboxReportFailure,true);addEventListener('unhandledrejection',__devboxReportFailure,true);",
         "const __devboxWithGesture=async(command,payload={})=>{const gestureToken=await __devboxGesture;__devboxGesture=undefined;if(!gestureToken)throw new Error('this operation requires a recent user gesture');return __devboxInvoke(command,{...payload,gestureToken})};",
-        "Object.defineProperty(window,'__DEVBOX_PLUGIN_API__',{value:Object.freeze({reportReady:()=>__devboxInvoke('plugin_report_ready',{version:window.__DEVBOX_PLUGIN__.version}),core:Object.freeze({version:'",
+        "Object.defineProperty(window,'__DEVBOX_PLUGIN_API__',{value:Object.freeze({reportReady:()=>__devboxInvoke('plugin_report_ready',{version:window.__DEVBOX_PLUGIN__.version}).then(__devboxFinishLoading),core:Object.freeze({version:'",
         env!("CARGO_PKG_VERSION"),
         "',ping:()=>__devboxInvoke('core_ping',{clientTime:new Date().toISOString()})}),settings:Object.freeze({get:(key)=>__devboxInvoke('settings_get',{key}).then(response=>response.record),update:(key,value,expectedRevision)=>__devboxInvoke('settings_update',{key,value,expectedRevision}).then(response=>response.record)}),clipboard:Object.freeze({readText:()=>__devboxWithGesture('plugin_clipboard_read'),writeText:(value)=>__devboxWithGesture('plugin_clipboard_write',{value})}),java:Object.freeze({execute:(request)=>__devboxWithGesture('plugin_java_execute',request)})}),writable:false,configurable:false});",
         "window.dispatchEvent(new CustomEvent('devbox:host-ready',{detail:window.__DEVBOX_PLUGIN__}));})();",
     ]
     .concat();
     let child = WebviewBuilder::new(&label, WebviewUrl::CustomProtocol(url))
+        .background_color(envelope.payload.theme.background_color())
         .initialization_script(initialization_script)
         .on_navigation(is_plugin_view_url);
     let created = window.window().add_child(
         child,
-        position,
-        LogicalSize::new(
-            envelope.payload.bounds.width,
-            envelope.payload.bounds.height,
-        ),
+        plugin_view_loading_position(),
+        plugin_view_loading_size(),
     );
-    if let Err(error) = created {
-        // 两次布局同步可能并发打开同一视图；若另一请求已创建成功则直接复用。
-        if app.get_webview(&label).is_some() {
-            return Ok(PluginOpenedResponse { label });
+    let created = match created {
+        Ok(webview) => webview,
+        Err(error) => {
+            // 两次布局同步可能并发打开同一视图；若另一请求已创建成功则直接复用。
+            if app.get_webview(&label).is_some() {
+                return Ok(PluginOpenedResponse { label });
+            }
+            state.runtime.unbind(&label);
+            return Err(DevBoxError::internal(
+                envelope.request_id(),
+                error.to_string(),
+            ));
         }
-        state.runtime.unbind(&label);
-        return Err(DevBoxError::internal(
-            envelope.request_id(),
-            error.to_string(),
-        ));
+    };
+    // 极快加载时 reportReady 可能先于 add_child 返回，再补一次位置同步。
+    if let Some(identity) = state.runtime.resolve(&label) {
+        if identity.ready && identity.requested_visible {
+            if let Some(placement) = identity.placement {
+                show_ready_plugin_view(&created, placement).map_err(|error| {
+                    DevBoxError::internal(envelope.request_id(), error.to_string())
+                })?;
+            }
+        }
     }
     let timeout_app = app.clone();
     let timeout_label = label.clone();
@@ -715,6 +838,7 @@ pub async fn plugin_open(
 pub fn plugin_view_set_visible(
     app: AppHandle,
     window: Webview,
+    state: State<'_, AppState>,
     envelope: CommandEnvelope<PluginViewVisibleRequest>,
 ) -> Result<(), DevBoxError> {
     validate_core(&window, &envelope)?;
@@ -722,12 +846,28 @@ pub fn plugin_view_set_visible(
     let webview = app
         .get_webview(&label)
         .ok_or_else(|| DevBoxError::not_found(envelope.request_id(), "plugin view"))?;
-    if envelope.payload.visible {
-        webview.show()
+    let ready = state
+        .runtime
+        .set_requested_visible(&label, envelope.payload.visible)
+        .ok_or_else(|| DevBoxError::not_found(envelope.request_id(), "plugin runtime"))?;
+    if !envelope.payload.visible {
+        webview
+            .hide()
+            .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))
+    } else if ready {
+        let placement = state
+            .runtime
+            .resolve(&label)
+            .and_then(|identity| identity.placement);
+        if let Some(placement) = placement {
+            show_ready_plugin_view(&webview, placement)
+                .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))
+        } else {
+            Ok(())
+        }
     } else {
-        webview.hide()
+        Ok(())
     }
-    .map_err(|error| DevBoxError::internal(envelope.request_id(), error.to_string()))
 }
 
 #[tauri::command]
@@ -808,6 +948,16 @@ mod tests {
             plugin_view_label_prefix("devbox.tool-name"),
             plugin_view_label_prefix("devbox.tool.name")
         );
+    }
+
+    #[test]
+    fn 插件加载阶段的原生视图保持在可视区域外且尺寸最小() {
+        let position = plugin_view_loading_position();
+        let size = plugin_view_loading_size();
+        assert!(position.x + size.width < 0.0);
+        assert!(position.y + size.height < 0.0);
+        assert_eq!(size.width, 1.0);
+        assert_eq!(size.height, 1.0);
     }
 
     #[test]

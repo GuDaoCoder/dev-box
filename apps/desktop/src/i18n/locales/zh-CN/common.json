@@ -239,7 +239,9 @@
     },
     "confirmUninstall": {
       "plugin": "卸载 {{name}}？",
-      "data": "同时删除本地数据？取消则保留。"
+      "data": "是否同时删除插件的本地数据？",
+      "keepData": "卸载并保留数据",
+      "deleteData": "卸载并删除数据"
     },
     "empty": {
       "installedTitle": "未安装插件"

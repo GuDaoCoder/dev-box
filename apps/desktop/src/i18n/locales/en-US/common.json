@@ -239,7 +239,9 @@
     },
     "confirmUninstall": {
       "plugin": "Uninstall {{name}}?",
-      "data": "Delete local data too? Cancel to keep it."
+      "data": "Delete the plugin's local data too?",
+      "keepData": "Uninstall, keep data",
+      "deleteData": "Uninstall and delete data"
     },
     "empty": {
       "installedTitle": "No plugins installed"

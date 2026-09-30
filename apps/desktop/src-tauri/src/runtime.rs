@@ -24,9 +24,21 @@ pub struct PluginWebviewIdentity {
     pub consecutive_failures: u8,
     pub ready: bool,
     #[serde(skip)]
+    pub requested_visible: bool,
+    #[serde(skip)]
+    pub placement: Option<PluginViewPlacement>,
+    #[serde(skip)]
     pub bridge_secret: String,
     #[serde(skip)]
     pub gesture_tokens: Vec<(String, Instant)>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct PluginViewPlacement {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
 }
 
 #[derive(Default)]
@@ -62,6 +74,8 @@ impl PluginRuntimeRegistry {
             root,
             consecutive_failures: 0,
             ready: false,
+            requested_visible: false,
+            placement: None,
             bridge_secret: uuid::Uuid::new_v4().to_string(),
             gesture_tokens: Vec::new(),
         };
@@ -71,6 +85,21 @@ impl PluginRuntimeRegistry {
 
     pub fn resolve(&self, label: &str) -> Option<PluginWebviewIdentity> {
         self.identities.lock().ok()?.get(label).cloned()
+    }
+
+    pub fn request_view(&self, label: &str, placement: PluginViewPlacement) -> Option<bool> {
+        let mut identities = self.identities.lock().ok()?;
+        let identity = identities.get_mut(label)?;
+        identity.placement = Some(placement);
+        identity.requested_visible = true;
+        Some(identity.ready)
+    }
+
+    pub fn set_requested_visible(&self, label: &str, visible: bool) -> Option<bool> {
+        let mut identities = self.identities.lock().ok()?;
+        let identity = identities.get_mut(label)?;
+        identity.requested_visible = visible;
+        Some(identity.ready)
     }
 
     pub fn validate_caller(&self, label: &str, plugin_id: &str) -> bool {
@@ -297,6 +326,42 @@ mod tests {
             .expect("真实用户手势应换取一次性令牌");
         assert!(registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &token));
         assert!(!registry.consume_gesture_token("plugin-fixture", "devbox.fixture", &token));
+    }
+
+    #[test]
+    fn 插件就绪前只记录期望的显示位置和状态() {
+        let registry = PluginRuntimeRegistry::default();
+        registry
+            .bind(
+                "plugin-loading".to_owned(),
+                "devbox.fixture".to_owned(),
+                "1.0.0".to_owned(),
+                PathBuf::from("/tmp/fixture"),
+            )
+            .expect("应绑定身份");
+        let placement = PluginViewPlacement {
+            x: 250.0,
+            y: 94.0,
+            width: 800.0,
+            height: 600.0,
+        };
+        assert_eq!(
+            registry.request_view("plugin-loading", placement),
+            Some(false)
+        );
+        assert_eq!(
+            registry.set_requested_visible("plugin-loading", false),
+            Some(false)
+        );
+        assert!(registry.report_ready("plugin-loading", "devbox.fixture", "1.0.0"));
+        let identity = registry.resolve("plugin-loading").expect("应保留视图状态");
+        assert!(identity.ready);
+        assert!(!identity.requested_visible);
+        assert_eq!(identity.placement.expect("应保留布局").x, 250.0);
+        assert_eq!(
+            registry.set_requested_visible("plugin-loading", true),
+            Some(true)
+        );
     }
 
     #[test]

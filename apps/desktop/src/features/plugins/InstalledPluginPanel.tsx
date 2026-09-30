@@ -6,6 +6,7 @@ import type { InstalledPlugin } from "@devbox/ipc-contracts";
 
 import { pluginAdminAPI } from "../../ipc/client";
 import { hostErrorMessage } from "../../ipc/errors";
+import { useAppStore } from "../../stores/app-store";
 
 export function InstalledPluginPanel({
   active,
@@ -19,6 +20,7 @@ export function InstalledPluginPanel({
   viewId: string;
 }) {
   const { t, i18n } = useTranslation();
+  const theme = useAppStore((state) => state.theme);
   const container = useRef<HTMLDivElement>(null);
   const pending = useRef<Promise<void>>(Promise.resolve());
   const generation = useRef(0);
@@ -50,6 +52,7 @@ export function InstalledPluginPanel({
               viewId,
               { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
               i18n.language === "zh-CN" ? "zh-CN" : "en-US",
+              theme,
             );
             if (!cancelled && generation.current === currentGeneration) setError(undefined);
           } catch (nextError) {
@@ -74,7 +77,7 @@ export function InstalledPluginPanel({
         .then(() => pluginAdminAPI.setViewVisible(plugin.id, viewId, false))
         .catch(() => undefined);
     };
-  }, [active, i18n.language, plugin.id, suspended, viewId]);
+  }, [active, i18n.language, plugin.id, suspended, theme, viewId]);
 
   useEffect(
     () => () => {

@@ -44,6 +44,13 @@ describe("插件视图与主程序浮层", () => {
     );
 
     await waitFor(() => expect(apiMocks.open).toHaveBeenCalledTimes(1));
+    expect(apiMocks.open).toHaveBeenCalledWith(
+      "test-plugin",
+      "main",
+      { x: 0, y: 0, width: 800, height: 600 },
+      expect.any(String),
+      "dark",
+    );
     view.rerender(<InstalledPluginPanel active plugin={plugin} suspended viewId="main" />);
     await waitFor(() =>
       expect(apiMocks.setViewVisible).toHaveBeenCalledWith("test-plugin", "main", false),

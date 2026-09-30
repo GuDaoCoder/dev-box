@@ -675,6 +675,24 @@ textarea:focus-visible,
   justify-content: flex-end;
   gap: 8px;
 }
+.plugin-confirm-backdrop {
+  padding: 16px;
+  place-items: center;
+}
+.plugin-uninstall-confirmation {
+  width: min(480px, 100%);
+}
+.plugin-uninstall-confirmation h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.plugin-uninstall-confirmation .plugin-uninstall-icon {
+  flex: none;
+  color: var(--warning);
+}
+.plugin-uninstall-confirmation .confirmation-actions {
+  flex-wrap: wrap;
+}
 
 .tab-workspace {
   display: grid;

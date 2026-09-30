@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { confirm, open } from "@tauri-apps/plugin-dialog";
+import { createPortal } from "react-dom";
+import { open } from "@tauri-apps/plugin-dialog";
 import {
   CircleAlert,
   FolderOpen,
@@ -40,6 +41,7 @@ export function PluginCenterView({
   const [preflight, setPreflight] = useState<InstallPreflight>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [uninstallTarget, setUninstallTarget] = useState<InstalledPlugin>();
 
   async function run(operation: () => Promise<void>) {
     setBusy(true);
@@ -85,20 +87,10 @@ export function PluginCenterView({
     setPreflight(undefined);
   }
 
-  async function uninstallPlugin(plugin: InstalledPlugin) {
-    const approved = await confirm(
-      t("pluginCenter.confirmUninstall.plugin", { name: plugin.name }),
-      {
-        title: "DevBox",
-        kind: "warning",
-      },
-    );
-    if (!approved) return;
-    const deleteData = await confirm(t("pluginCenter.confirmUninstall.data"), {
-      title: "DevBox",
-      kind: "warning",
-    });
-    applyPlugins(await pluginAdminAPI.uninstall(plugin.id, deleteData));
+  async function uninstallPlugin(deleteData: boolean) {
+    if (!uninstallTarget) return;
+    applyPlugins(await pluginAdminAPI.uninstall(uninstallTarget.id, deleteData));
+    setUninstallTarget(undefined);
   }
 
   return (
@@ -203,7 +195,10 @@ export function PluginCenterView({
                   <Button
                     disabled={busy}
                     icon={<Trash2 aria-hidden="true" size={15} />}
-                    onClick={() => void run(() => uninstallPlugin(plugin))}
+                    onClick={() => {
+                      setError(undefined);
+                      setUninstallTarget(plugin);
+                    }}
                     variant="danger"
                   >
                     {t("pluginCenter.actions.uninstall")}
@@ -324,6 +319,55 @@ export function PluginCenterView({
           </section>
         </div>
       ) : null}
+      {uninstallTarget
+        ? createPortal(
+            <div className="palette-backdrop plugin-confirm-backdrop" role="presentation">
+              <section
+                aria-label={t("pluginCenter.confirmUninstall.plugin", {
+                  name: uninstallTarget.name,
+                })}
+                aria-modal="true"
+                className="install-confirmation plugin-uninstall-confirmation"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && !busy) setUninstallTarget(undefined);
+                }}
+                role="dialog"
+              >
+                <div className="confirmation-heading">
+                  <ShieldAlert aria-hidden="true" className="plugin-uninstall-icon" />
+                  <div>
+                    <h2>
+                      {t("pluginCenter.confirmUninstall.plugin", { name: uninstallTarget.name })}
+                    </h2>
+                    <p>{t("pluginCenter.confirmUninstall.data")}</p>
+                  </div>
+                </div>
+                {error ? (
+                  <div className="plugin-notice danger" role="alert">
+                    <CircleAlert aria-hidden="true" size={18} />
+                    {error}
+                  </div>
+                ) : null}
+                <div className="confirmation-actions">
+                  <Button autoFocus disabled={busy} onClick={() => setUninstallTarget(undefined)}>
+                    {t("pluginCenter.actions.cancel")}
+                  </Button>
+                  <Button disabled={busy} onClick={() => void run(() => uninstallPlugin(false))}>
+                    {t("pluginCenter.confirmUninstall.keepData")}
+                  </Button>
+                  <Button
+                    disabled={busy}
+                    onClick={() => void run(() => uninstallPlugin(true))}
+                    variant="danger"
+                  >
+                    {t("pluginCenter.confirmUninstall.deleteData")}
+                  </Button>
+                </div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
