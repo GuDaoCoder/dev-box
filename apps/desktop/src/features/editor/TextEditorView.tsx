@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button, ShortcutKbd } from "@devbox/ui";
+import { Button, Kbd, ShortcutKbd } from "@devbox/ui";
 import { useAppStore } from "../../stores/app-store";
 import {
   editorAPI,
@@ -45,6 +45,11 @@ import {
   type TextEncoding,
 } from "./editor-api";
 import { registerEditorCloseGuard } from "./close-guard";
+import {
+  columnSelection,
+  columnSelectionShortcutLabel,
+  isColumnSelectionShortcut,
+} from "./column-selection";
 import { readEditorSession, writeEditorSession } from "./editor-session";
 import { fileIconFor, fileIconToneFor } from "./file-icons";
 import { codeHighlight } from "./highlight";
@@ -111,6 +116,9 @@ export function TextEditorView() {
   const [busy, setBusy] = useState(Boolean(savedSession));
   const [error, setError] = useState("");
   const [wrap, setWrap] = useState(true);
+  const [columnMode, setColumnMode] = useState(false);
+  const columnModeRef = useRef(columnMode);
+  columnModeRef.current = columnMode;
   const wrapRef = useRef(wrap);
   wrapRef.current = wrap;
   const [findMode, setFindMode] = useState<"find" | "replace">();
@@ -137,6 +145,7 @@ export function TextEditorView() {
   const resetEditorStatePaths = useRef(new Set<string>());
   const languageCompartment = useRef(new Compartment());
   const wrapCompartment = useRef(new Compartment());
+  const columnCompartment = useRef(new Compartment());
   const findInput = useRef<HTMLInputElement>(null);
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const encodingMenuRef = useRef<HTMLDivElement>(null);
@@ -552,7 +561,12 @@ export function TextEditorView() {
           syntaxHighlighting(codeHighlight),
           EditorState.readOnly.of(file.readOnly),
           languageCompartment.current.of([]),
-          wrapCompartment.current.of(wrapRef.current ? EditorView.lineWrapping : []),
+          wrapCompartment.current.of(
+            wrapRef.current && !columnModeRef.current ? EditorView.lineWrapping : [],
+          ),
+          columnCompartment.current.of(
+            columnModeRef.current ? columnSelection(() => setColumnMode(false)) : [],
+          ),
           Prec.highest(
             keymap.of([
               {
@@ -581,6 +595,14 @@ export function TextEditorView() {
                 key: "Mod-s",
                 run: () => {
                   void saveFile(file.path);
+                  return true;
+                },
+              },
+              {
+                key: "Alt-Shift-Insert",
+                mac: "Meta-Shift-8",
+                run: () => {
+                  setColumnMode((value) => !value);
                   return true;
                 },
               },
@@ -633,9 +655,15 @@ export function TextEditorView() {
     const view = viewRef.current;
     if (view)
       view.dispatch({
-        effects: wrapCompartment.current.reconfigure(wrap ? EditorView.lineWrapping : []),
+        effects: [
+          wrapCompartment.current.reconfigure(wrap && !columnMode ? EditorView.lineWrapping : []),
+          columnCompartment.current.reconfigure(
+            columnMode ? columnSelection(() => setColumnMode(false)) : [],
+          ),
+        ],
+        ...(!columnMode ? { selection: view.state.selection.asSingle() } : {}),
       });
-  }, [wrap]);
+  }, [wrap, columnMode, activePath]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -698,7 +726,11 @@ export function TextEditorView() {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (!activeRef.current) return;
-      if (event.key === "Escape" && findMode) {
+      if (isColumnSelectionShortcut(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        setColumnMode((value) => !value);
+      } else if (event.key === "Escape" && findMode) {
         event.preventDefault();
         setFindMode(undefined);
         viewRef.current?.focus();
@@ -886,11 +918,24 @@ export function TextEditorView() {
             <div className="editor-option-group">
               <label className="editor-wrap-toggle">
                 <input
-                  checked={wrap}
+                  checked={wrap && !columnMode}
+                  disabled={columnMode}
                   onChange={(event) => setWrap(event.target.checked)}
                   type="checkbox"
                 />
                 {t("editor.wrap")}
+              </label>
+              <label className="editor-wrap-toggle">
+                <input
+                  checked={columnMode}
+                  disabled={!active}
+                  onChange={(event) => {
+                    setColumnMode(event.target.checked);
+                    viewRef.current?.focus();
+                  }}
+                  type="checkbox"
+                />
+                {t("editor.columnSelection")} <Kbd>{columnSelectionShortcutLabel()}</Kbd>
               </label>
             </div>
           </div>
@@ -1153,6 +1198,9 @@ export function TextEditorView() {
               <footer className="editor-status">
                 {active ? (
                   <>
+                    {columnMode ? (
+                      <span className="editor-column-mode">{t("editor.columnSelection")}</span>
+                    ) : null}
                     <span>
                       {t("editor.line")} {position.line}, {t("editor.column")} {position.column}
                     </span>

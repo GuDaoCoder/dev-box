@@ -60,6 +60,7 @@
     "undo": "Undo",
     "redo": "Redo",
     "wrap": "Word Wrap",
+    "columnSelection": "Column Selection",
     "files": "Files",
     "showHidden": "Show hidden files",
     "empty": "Open a folder to browse and edit text files",

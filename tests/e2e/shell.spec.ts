@@ -382,6 +382,99 @@ test("文本编辑器恢复上次文件并区分未知文件图标与越界跳�
   await expect(page.locator(".editor-status")).toContainText("Ln 2, Col 4");
 });
 
+test("文本编辑器列选择支持拖拽、多行输入与粘贴，退出后恢复普通编辑", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      "devbox.editor.workspace.v1",
+      JSON.stringify({ rootPath: "/workspace", tabs: ["columns.txt"], activePath: "columns.txt" }),
+    );
+    Object.defineProperty(window, "__TAURI_EVENT_PLUGIN_INTERNALS__", {
+      configurable: true,
+      value: { unregisterListener: () => {} },
+    });
+    Object.defineProperty(window, "__TAURI_INTERNALS__", {
+      configurable: true,
+      value: {
+        metadata: { currentWindow: { label: "main" } },
+        invoke: (command: string) => {
+          switch (command) {
+            case "editor_open_directory":
+              return Promise.resolve({ name: "workspace", path: "/workspace" });
+            case "editor_list_directory":
+              return Promise.resolve([
+                { name: "columns.txt", path: "columns.txt", kind: "file", hidden: false },
+              ]);
+            case "editor_read_file":
+              return Promise.resolve({
+                path: "columns.txt",
+                content: "abc\ndef\nghi",
+                revision: "hash",
+                size: 11,
+                readOnly: false,
+                encoding: "UTF-8",
+                lineEnding: "LF",
+              });
+            case "plugin:event|listen":
+              return Promise.resolve(1);
+            default:
+              return Promise.resolve(null);
+          }
+        },
+        transformCallback: () => 1,
+        unregisterCallback: () => {},
+      },
+    });
+  });
+  await page.getByRole("button", { name: "Text Editor" }).click();
+  await expect(page.getByRole("tab", { name: "columns.txt" })).toBeVisible();
+  const mode = page.getByRole("checkbox", { name: /Column Selection/ });
+  const wrap = page.getByRole("checkbox", { name: "Word Wrap" });
+  const content = page.locator(".editor-code-host .cm-content");
+  const lines = content.locator(".cm-line");
+  await mode.check();
+  await expect(wrap).toBeDisabled();
+  await expect(wrap).not.toBeChecked();
+  await expect(content).toHaveCSS("cursor", "crosshair");
+  await expect(content).not.toHaveClass(/cm-lineWrapping/);
+
+  const points = await lines.evaluateAll((elements) =>
+    [0, 2].map((index) => {
+      const range = document.createRange();
+      const text = elements[index].firstChild!;
+      range.setStart(text, index === 0 ? 1 : 2);
+      range.setEnd(text, index === 0 ? 1 : 2);
+      const rect = range.getBoundingClientRect();
+      return { x: rect.left, y: (rect.top + rect.bottom) / 2 };
+    }),
+  );
+  await page.mouse.move(points[0].x, points[0].y);
+  await page.mouse.down();
+  await page.mouse.move(points[1].x, points[1].y, { steps: 8 });
+  await page.mouse.up();
+  await page.keyboard.press("ControlOrMeta+c");
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("b\ne\nh");
+  await page.keyboard.type("X");
+  await expect(lines).toHaveText(["aXc", "dXf", "gXi"]);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(lines).toHaveText(["abc", "def", "ghi"]);
+  await page.evaluate(() => navigator.clipboard.writeText("1\n2\n3"));
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect(lines).toHaveText(["a1c", "d2f", "g3i"]);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(lines).toHaveText(["abc", "def", "ghi"]);
+  await page.keyboard.press("Escape");
+  await expect(mode).not.toBeChecked();
+  await expect(wrap).toBeEnabled();
+  await expect(wrap).toBeChecked();
+  await expect(content).toHaveClass(/cm-lineWrapping/);
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.type("!");
+  await expect(lines).toHaveText(["ab!c", "def", "ghi"]);
+});
+
 test("使用键盘切换标签并在设置中切换语言", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Timestamp Tool" }).click();

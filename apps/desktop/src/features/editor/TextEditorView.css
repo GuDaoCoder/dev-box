@@ -90,6 +90,21 @@
   margin: 0;
   accent-color: var(--accent);
 }
+.editor-wrap-toggle:has(input:checked) {
+  color: var(--text);
+}
+.editor-wrap-toggle:has(input:disabled) {
+  opacity: 0.6;
+}
+.editor-wrap-toggle .ui-kbd {
+  font-size: 10px;
+}
+.editor-code-host .cm-column-selection .cm-content {
+  cursor: crosshair;
+}
+.editor-status .editor-column-mode {
+  color: var(--accent);
+}
 .editor-alert {
   color: var(--danger);
   font-size: 12px;

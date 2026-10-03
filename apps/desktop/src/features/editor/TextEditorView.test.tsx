@@ -293,6 +293,81 @@ describe("TextEditorView", () => {
     expect(screen.queryByText("Invalid position")).toBeNull();
   });
 
+  it("列选择暂停换行，支持多行编辑、撤销，退出后恢复换行和单选区", async () => {
+    mocks.readFile.mockResolvedValueOnce({
+      path: "data.json",
+      content: "abc\ndef\nghi",
+      revision: "hash",
+      size: 11,
+      readOnly: false,
+      encoding: "UTF-8",
+      lineEnding: "LF",
+    });
+    render(<TextEditorView />);
+    fireEvent.click(screen.getByRole("button", { name: "Open Folder" }));
+    fireEvent.click(await screen.findByRole("button", { name: "data.json" }));
+    await screen.findByRole("tab", { name: "data.json" });
+    const toggle = screen.getByRole("checkbox", { name: /Column Selection/ });
+    const wrap = screen.getByRole("checkbox", { name: "Word Wrap" });
+    const editor = EditorView.findFromDOM(document.querySelector<HTMLElement>(".cm-editor")!)!;
+    fireEvent.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(wrap).not.toBeChecked();
+    expect(wrap).toBeDisabled();
+    expect(editor.contentDOM).not.toHaveClass("cm-lineWrapping");
+    fireEvent.keyDown(editor.contentDOM, { key: "ArrowDown", shiftKey: true });
+    fireEvent.keyDown(editor.contentDOM, { key: "ArrowDown", shiftKey: true });
+    expect(editor.state.selection.ranges).toHaveLength(3);
+    act(() => editor.dispatch({ ...editor.state.replaceSelection("X"), userEvent: "input.type" }));
+    expect(editor.state.doc.toString()).toBe("Xabc\nXdef\nXghi");
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+    expect(mocks.saveFile).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(editor.state.doc.toString()).toBe("abc\ndef\nghi");
+    fireEvent.keyDown(editor.contentDOM, { key: "Escape" });
+    expect(toggle).not.toBeChecked();
+    expect(wrap).toBeChecked();
+    expect(wrap).toBeEnabled();
+    expect(editor.contentDOM).toHaveClass("cm-lineWrapping");
+    expect(editor.state.selection.ranges).toHaveLength(1);
+  });
+
+  it("列选择跨文件生效，切换缓存文件后重新应用模式并保留用户换行偏好", async () => {
+    render(<TextEditorView />);
+    fireEvent.click(screen.getByRole("button", { name: "Open Folder" }));
+    fireEvent.click(await screen.findByRole("button", { name: "data.json" }));
+    await screen.findByRole("tab", { name: "data.json" });
+    const wrap = screen.getByRole("checkbox", { name: "Word Wrap" });
+    fireEvent.click(wrap);
+    fireEvent.click(screen.getByRole("button", { name: "src" }));
+    mocks.readFile.mockResolvedValueOnce({
+      path: "src/App.java",
+      content: "class App {}",
+      revision: "hash",
+      size: 12,
+      readOnly: false,
+      encoding: "UTF-8",
+      lineEnding: "LF",
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "App.java" }));
+    await screen.findByRole("tab", { name: "App.java" });
+    fireEvent.keyDown(document.querySelector<HTMLElement>(".cm-content")!, {
+      key: "Insert",
+      altKey: true,
+      shiftKey: true,
+    });
+    expect(screen.getByRole("checkbox", { name: /Column Selection/ })).toBeChecked();
+    fireEvent.click(screen.getByRole("tab", { name: "data.json" }));
+    expect(document.querySelector(".cm-editor")).toHaveClass("cm-column-selection");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Column Selection/ }));
+    expect(wrap).not.toBeChecked();
+    expect(wrap).toBeEnabled();
+    expect(
+      EditorView.findFromDOM(document.querySelector<HTMLElement>(".cm-editor")!)!.contentDOM,
+    ).not.toHaveClass("cm-lineWrapping");
+    expect(mocks.saveFile).not.toHaveBeenCalled();
+  });
+
   it("重新打开编辑器时恢复目录、文件标签及活动文件", async () => {
     const first = render(<TextEditorView />);
     fireEvent.click(screen.getByRole("button", { name: "Open Folder" }));

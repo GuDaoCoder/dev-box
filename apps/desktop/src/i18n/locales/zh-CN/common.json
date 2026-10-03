@@ -60,6 +60,7 @@
     "undo": "撤销",
     "redo": "重做",
     "wrap": "自动换行",
+    "columnSelection": "列选择",
     "files": "文件",
     "showHidden": "显示隐藏文件",
     "empty": "选择目录以浏览和编辑文本文件",
